@@ -104,6 +104,25 @@ int main(void)
         return 1;
     }
 
+    // AntTweakBar draws every widget (buttons, sliders, panel, swatches) at a
+    // fixed number of pixels with no DPI awareness, so on a HiDPI/Retina
+    // display (where those pixels are physically smaller) the whole bar looks
+    // too small compared to a standard display. AntTweakBar's own "fontscaling"
+    // global parameter (must be set via TwDefine before TwInit) scales the
+    // font metrics that ALL of its widget-layout math derives from (row
+    // height, button/slider size, panel size, ...), so scaling it by the
+    // window's content scale factor makes the whole bar - not just its text -
+    // render at a comparable physical size to a standard display, without
+    // touching any library source. On a standard (non-HiDPI) display the
+    // content scale is 1.0, so this is a no-op there.
+    {
+        float xscale = 1.0f, yscale = 1.0f;
+        glfwGetWindowContentScale(window, &xscale, &yscale);
+        char fontScalingDef[64];
+        snprintf(fontScalingDef, sizeof(fontScalingDef), "GLOBAL fontscaling=%g", (double)xscale);
+        TwDefine(fontScalingDef);
+    }
+
     if (!TwInit(TW_OPENGL, NULL)) {
         fprintf(stderr, "AntTweakBar initialization failed: %s\n", TwGetLastError());
         return 1;
