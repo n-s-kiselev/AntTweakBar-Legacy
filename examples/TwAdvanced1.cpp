@@ -43,6 +43,20 @@ bool g_cameraDragging = false;
 double g_lastMouseX = 0.0;
 double g_lastMouseY = 0.0;
 
+// AntTweakBar lays out widgets and hit-tests in raw pixel units with no DPI
+// awareness. On a Retina/HiDPI display, GLFW's window size (screen
+// coordinates, used by mouse callbacks) and framebuffer size (actual
+// pixels, used for rendering) differ by the display's content scale. We
+// keep TwWindowSize/glViewport in framebuffer-pixel units (matching the
+// real render target) and scale mouse coordinates from screen coordinates
+// into that same framebuffer-pixel space before forwarding them to
+// AntTweakBar. On a standard (non-HiDPI) display framebuffer size equals
+// window size, so this scale is exactly 1.0 and everything behaves as before.
+// (The camera-drag logic below deliberately keeps using window/screen
+// coordinates for its own delta normalization, which is resolution
+// independent and unaffected by this.)
+double g_MouseScaleX = 1.0, g_MouseScaleY = 1.0;
+
 const char* title = "AntTweakBar example: TwAdvanced1";
 
 // Light structure: embeds light parameters
@@ -299,7 +313,7 @@ static void mousebuttonCallback(GLFWwindow* _window, int _button, int _action, i
 
 static void mousePosCallback(GLFWwindow* _window, double _xpos, double _ypos)
 {
-  if (TwEventMousePosGLFW((int)_xpos, (int)_ypos)) return;
+  if (TwEventMousePosGLFW((int)(_xpos * g_MouseScaleX), (int)(_ypos * g_MouseScaleY))) return;
 
   if (g_cameraDragging) {
       double dx = _xpos - g_lastMouseX;
@@ -326,6 +340,10 @@ static void mouseScrollCallback(GLFWwindow* _window, double _xoffset, double _yo
   if (TwEventMouseWheelGLFW((int)pos)) return;
 }
 
+// Registered as the FRAMEBUFFER size callback (not the window size callback):
+// GLFW reports this in actual pixels, matching glViewport/TwWindowSize, and
+// firing consistently (unlike mixing window-size and framebuffer-size calls)
+// is what keeps the render target and AntTweakBar's own canvas in sync.
 static void resizeCallback(GLFWwindow* _window, int _width, int _height)
 {
     if (_height == 0) _height = 1;
@@ -347,6 +365,11 @@ static void resizeCallback(GLFWwindow* _window, int _width, int _height)
 
   // Notify AntTweakBar of the window size
   TwWindowSize(_width, _height);
+
+  int winWidth = _width, winHeight = _height;
+  glfwGetWindowSize(_window, &winWidth, &winHeight);
+  g_MouseScaleX = (winWidth > 0) ? (double)_width / winWidth : 1.0;
+  g_MouseScaleY = (winHeight > 0) ? (double)_height / winHeight : 1.0;
 }
 
 
@@ -744,6 +767,10 @@ int main()
     // glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     // glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // Required on macOS
 
+    // Retina/HiDPI framebuffers are left enabled (full resolution); see
+    // resizeCallback/mousePosCallback above for how the resulting
+    // framebuffer-vs-window-size scale mismatch is handled.
+
     // Create a window
     window = glfwCreateWindow(800, 600, title, NULL, NULL);
     if (!window)
@@ -816,7 +843,7 @@ int main()
     glfwSetMouseButtonCallback(window, mousebuttonCallback);
     glfwSetCursorPosCallback(window, mousePosCallback);
     glfwSetScrollCallback(window, mouseScrollCallback);
-    glfwSetWindowSizeCallback(window, resizeCallback);
+    glfwSetFramebufferSizeCallback(window, resizeCallback);
 
     // Initialize time
     double time = glfwGetTime(), dt = 0;            // Current time and elapsed time

@@ -309,6 +309,17 @@ static int g_Width = 640, g_Height = 480;
 static std::vector<Vertex> g_Vertices;
 static std::vector<unsigned int> g_Indices;
 
+// AntTweakBar lays out widgets and hit-tests in raw pixel units with no DPI
+// awareness. On a Retina/HiDPI display, GLFW's window size (screen
+// coordinates, used by mouse callbacks) and framebuffer size (actual
+// pixels, used for rendering) differ by the display's content scale. We
+// keep TwWindowSize/glViewport in framebuffer-pixel units (matching the
+// real render target) and scale mouse coordinates from screen coordinates
+// into that same framebuffer-pixel space before forwarding them to
+// AntTweakBar. On a standard (non-HiDPI) display framebuffer size equals
+// window size, so this scale is exactly 1.0 and everything behaves as before.
+static double g_MouseScaleX = 1.0, g_MouseScaleY = 1.0;
+
 static void InitRenderStates()
 {
     glEnable(GL_LIGHTING);
@@ -462,17 +473,25 @@ static void mouseButtonCallback(GLFWwindow *window, int button, int action, int 
 static void mousePosCallback(GLFWwindow *window, double x, double y)
 {
     (void)window;
-    TwEventMousePosGLFW((int)x, (int)y);
+    TwEventMousePosGLFW((int)(x * g_MouseScaleX), (int)(y * g_MouseScaleY));
 }
 
-static void windowSizeCallback(GLFWwindow *window, int width, int height)
+// Registered as the FRAMEBUFFER size callback (not the window size callback):
+// GLFW reports this in actual pixels, matching glViewport/TwWindowSize, and
+// firing consistently (unlike mixing window-size and framebuffer-size calls)
+// is what keeps the render target and AntTweakBar's own canvas in sync.
+static void framebufferSizeCallback(GLFWwindow *window, int fbWidth, int fbHeight)
 {
-    (void)window;
-    if (height == 0) height = 1;
-    g_Width = width;
-    g_Height = height;
-    glViewport(0, 0, width, height);
-    TwWindowSize(width, height);
+    if (fbHeight == 0) fbHeight = 1;
+    g_Width = fbWidth;
+    g_Height = fbHeight;
+    glViewport(0, 0, fbWidth, fbHeight);
+    TwWindowSize(fbWidth, fbHeight);
+
+    int winWidth = fbWidth, winHeight = fbHeight;
+    glfwGetWindowSize(window, &winWidth, &winHeight);
+    g_MouseScaleX = (winWidth > 0) ? (double)fbWidth / winWidth : 1.0;
+    g_MouseScaleY = (winHeight > 0) ? (double)fbHeight / winHeight : 1.0;
 }
 
 int main(void)
@@ -484,8 +503,9 @@ int main(void)
 
     // No version/profile hints: this AntTweakBar build only supports the
     // OpenGL compatibility profile (TW_OPENGL_CORE crashes), so we let GLFW
-    // create its default (non-core) context.
-
+    // create its default (non-core) context. Retina/HiDPI framebuffers are
+    // left enabled (full resolution); see framebufferSizeCallback/
+    // mousePosCallback above for how the resulting scale mismatch is handled.
     GLFWwindow *window = glfwCreateWindow(g_Width, g_Height, "AntTweakBar + GLFW: Menger sponge", NULL, NULL);
     if (!window) {
         fprintf(stderr, "Cannot open GLFW window\n");
@@ -517,9 +537,9 @@ int main(void)
     }
 
     {
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-        windowSizeCallback(window, width, height);
+        int fbWidth, fbHeight;
+        glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
+        framebufferSizeCallback(window, fbWidth, fbHeight);
     }
 
     TwBar *bar = TwNewBar("TweakBar");
@@ -539,7 +559,7 @@ int main(void)
     glfwSetKeyCallback(window, keyCallback);
     glfwSetMouseButtonCallback(window, mouseButtonCallback);
     glfwSetCursorPosCallback(window, mousePosCallback);
-    glfwSetWindowSizeCallback(window, windowSizeCallback);
+    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
     while (!glfwWindowShouldClose(window)) {
         Anim();

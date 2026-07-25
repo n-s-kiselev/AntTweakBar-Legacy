@@ -37,6 +37,17 @@ typedef struct {
 static Particle g_Particles[MAX_PARTICLES];
 static int g_Width = 800, g_Height = 600;
 
+// AntTweakBar lays out widgets and hit-tests in raw pixel units with no DPI
+// awareness. On a Retina/HiDPI display, GLFW's window size (screen
+// coordinates, used by mouse callbacks) and framebuffer size (actual
+// pixels, used for rendering) differ by the display's content scale. We
+// keep TwWindowSize/glViewport in framebuffer-pixel units (matching the
+// real render target) and scale mouse coordinates from screen coordinates
+// into that same framebuffer-pixel space before forwarding them to
+// AntTweakBar. On a standard (non-HiDPI) display framebuffer size equals
+// window size, so this scale is exactly 1.0 and everything behaves as before.
+static double g_MouseScaleX = 1.0, g_MouseScaleY = 1.0;
+
 static float Random(void)
 {
     return 2.0f * ((float)rand() / RAND_MAX) - 1.0f;
@@ -113,7 +124,7 @@ static void mouseButtonCallback(GLFWwindow *window, int button, int action, int 
 static void mousePosCallback(GLFWwindow *window, double x, double y)
 {
     (void)window;
-    TwEventMousePosGLFW((int)x, (int)y);
+    TwEventMousePosGLFW((int)(x * g_MouseScaleX), (int)(y * g_MouseScaleY));
 }
 
 static void mouseScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
@@ -124,14 +135,22 @@ static void mouseScrollCallback(GLFWwindow *window, double xoffset, double yoffs
     TwEventMouseWheelGLFW((int)pos);
 }
 
-static void windowSizeCallback(GLFWwindow *window, int width, int height)
+// Registered as the FRAMEBUFFER size callback (not the window size callback):
+// GLFW reports this in actual pixels, matching glViewport/TwWindowSize, and
+// firing consistently (unlike mixing window-size and framebuffer-size calls)
+// is what keeps the render target and AntTweakBar's own canvas in sync.
+static void framebufferSizeCallback(GLFWwindow *window, int fbWidth, int fbHeight)
 {
-    (void)window;
-    if (height == 0) height = 1;
-    g_Width = width;
-    g_Height = height;
-    setProjection(width, height);
-    TwWindowSize(width, height);
+    if (fbHeight == 0) fbHeight = 1;
+    g_Width = fbWidth;
+    g_Height = fbHeight;
+    setProjection(fbWidth, fbHeight);
+    TwWindowSize(fbWidth, fbHeight);
+
+    int winWidth = fbWidth, winHeight = fbHeight;
+    glfwGetWindowSize(window, &winWidth, &winHeight);
+    g_MouseScaleX = (winWidth > 0) ? (double)fbWidth / winWidth : 1.0;
+    g_MouseScaleY = (winHeight > 0) ? (double)fbHeight / winHeight : 1.0;
 }
 
 int main(void)
@@ -187,9 +206,9 @@ int main(void)
     glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
 
     {
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-        windowSizeCallback(window, width, height);
+        int fbWidth, fbHeight;
+        glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
+        framebufferSizeCallback(window, fbWidth, fbHeight);
     }
 
     glfwSetKeyCallback(window, keyCallback);
@@ -197,7 +216,7 @@ int main(void)
     glfwSetMouseButtonCallback(window, mouseButtonCallback);
     glfwSetCursorPosCallback(window, mousePosCallback);
     glfwSetScrollCallback(window, mouseScrollCallback);
-    glfwSetWindowSizeCallback(window, windowSizeCallback);
+    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
     double time = glfwGetTime();
 

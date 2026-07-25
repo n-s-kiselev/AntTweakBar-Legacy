@@ -35,6 +35,20 @@ double g_lastMouseY = 0.0;
 // char g_userText[256] = "Hello AntTweakBar!\n";
 char *g_userText = NULL; // Will be malloc'ed on first use
 
+// AntTweakBar lays out widgets and hit-tests in raw pixel units with no DPI
+// awareness. On a Retina/HiDPI display, GLFW's window size (screen
+// coordinates, used by mouse callbacks) and framebuffer size (actual
+// pixels, used for rendering) differ by the display's content scale. We
+// keep TwWindowSize/glViewport in framebuffer-pixel units (matching the
+// real render target) and scale mouse coordinates from screen coordinates
+// into that same framebuffer-pixel space before forwarding them to
+// AntTweakBar. On a standard (non-HiDPI) display framebuffer size equals
+// window size, so this scale is exactly 1.0 and everything behaves as before.
+// (The camera-drag logic below deliberately keeps using window/screen
+// coordinates for its own delta normalization, which is resolution
+// independent and unaffected by this.)
+double g_MouseScaleX = 1.0, g_MouseScaleY = 1.0;
+
 static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
   if (action == GLFW_PRESS || action == GLFW_REPEAT)
@@ -121,7 +135,7 @@ static void mousebuttonCallback(GLFWwindow* _window, int _button, int _action, i
 
 static void mousePosCallback(GLFWwindow* _window, double _xpos, double _ypos)
 {
-  if (TwEventMousePosGLFW((int)_xpos, (int)_ypos)) return;
+  if (TwEventMousePosGLFW((int)(_xpos * g_MouseScaleX), (int)(_ypos * g_MouseScaleY))) return;
 
   if (g_cameraDragging) {
       double dx = _xpos - g_lastMouseX;
@@ -148,24 +162,11 @@ static void mouseScrollCallback(GLFWwindow* _window, double _xoffset, double _yo
   if (TwEventMouseWheelGLFW((int)pos)) return;
 }
 
-// static void framebufferSizeCallback(GLFWwindow* window, int fb_width, int fb_height)
-// {
-//     if (fb_height == 0) fb_height = 1;
-//     float aspect = (float)fb_width / (float)fb_height;
-//     float near = 1.0f, far = 100.0f;
-//     float fov = 45.0f;
-//     float top = tan(fov * 0.01745329251f) * near;
-//     float bottom = -top;
-//     float right = top * aspect;
-//     float left = -right;
-
-//     glViewport(0, 0, fb_width, fb_height);
-//     glMatrixMode(GL_PROJECTION);
-//     glLoadIdentity();
-//     glFrustum(left, right, bottom, top, near, far);
-// }
-
-static void windowSizeCallback(GLFWwindow* window, int width, int height)
+// Registered as the FRAMEBUFFER size callback (not the window size callback):
+// GLFW reports this in actual pixels, matching glViewport/TwWindowSize, and
+// firing consistently (unlike mixing window-size and framebuffer-size calls)
+// is what keeps the render target and AntTweakBar's own canvas in sync.
+static void framebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
   if (height == 0) height = 1;
     float aspect = (float)width / (float)height;
@@ -182,6 +183,11 @@ static void windowSizeCallback(GLFWwindow* window, int width, int height)
     glFrustum(left, right, bottom, top, near, far);
 
     TwWindowSize(width, height);
+
+    int winWidth = width, winHeight = height;
+    glfwGetWindowSize(window, &winWidth, &winHeight);
+    g_MouseScaleX = (winWidth > 0) ? (double)width / winWidth : 1.0;
+    g_MouseScaleY = (winHeight > 0) ? (double)height / winHeight : 1.0;
 }
 
 void TW_CALL ResetCubePosition(void *clientData)
@@ -321,8 +327,9 @@ int main()
       return 1;
   }
 
-  // Disable Retina scaling for now
-  glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);  
+  // Retina/HiDPI framebuffers are left enabled (full resolution); see
+  // framebufferSizeCallback/mousePosCallback above for how the resulting
+  // framebuffer-vs-window-size scale mismatch is handled.
   window = glfwCreateWindow(800, 600, "AntTweakBar + GLFW2", NULL, NULL);
   if(!window)
   {
@@ -346,11 +353,9 @@ int main()
       return -3;
   }
   {
-    int width, hight;
-    // glfwGetFramebufferSize(window, &width, &hight);
-    // framebufferSizeCallback(window, width, hight);
-    glfwGetWindowSize(window, &width, &hight); 
-    windowSizeCallback(window, width, hight);
+    int fbWidth, fbHeight;
+    glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
+    framebufferSizeCallback(window, fbWidth, fbHeight);
   }
   TwCopyCDStringToClientFunc(CopyCDStringToClient);
     
@@ -392,8 +397,7 @@ int main()
   glfwSetMouseButtonCallback(window, mousebuttonCallback);
   glfwSetCursorPosCallback(window, mousePosCallback);
   glfwSetScrollCallback(window, mouseScrollCallback);
-  glfwSetWindowSizeCallback(window, windowSizeCallback);
-  // glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+  glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
   // Initialize time
   time = glfwGetTime();
