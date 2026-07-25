@@ -1,80 +1,50 @@
-# AI Development Standard
+# AntTweakBar (Legacy)
 
-This package provides a reusable project instruction infrastructure for working with both OpenAI Codex and Claude Code.
+[AntTweakBar](https://anttweakbar.sourceforge.io/doc) (**ATB**) is a small and
+easy-to-use C/C++ library developed by
+[Philippe Decaudin](https://phildec.users.sourceforge.net/) that adds a
+lightweight, intuitive GUI to OpenGL-based graphics programs for real-time
+parameter tweaking. Representative screenshots can be found, for example, on
+the [magnoom](https://github.com/n-s-kiselev/magnoom) page.
 
-## Included files
+This is a maintained checkout of the legacy AntTweakBar development version,
+built with a single cross-platform [`nob.c`](https://github.com/tsoding/nob.h)
+build script instead of the original per-platform Makefiles/Visual Studio
+project. Only the OpenGL backend is targeted (Direct3D9/10/11 and the OpenGL
+Core Profile are not supported by this build).
 
-```text
-AGENTS.md
-CLAUDE.md
-PLANS.md
-.agents/skills/
-.claude/skills/
-```
+## Building
 
-`AGENTS.md` is the shared source of truth.
-
-`CLAUDE.md` imports `AGENTS.md` with:
-
-```markdown
-@AGENTS.md
-```
-
-The skills are duplicated intentionally under both `.agents/skills/` and `.claude/skills/`. No symbolic links are used.
-
-## Installation
-
-Copy all files and directories from this package into the root of a project repository.
-
-Do not overwrite an existing `AGENTS.md`, `CLAUDE.md`, or `PLANS.md` without reviewing and merging project-specific instructions.
-
-After copying:
-
-1. Complete the **Project-Specific Information** section in `AGENTS.md`.
-2. Verify the bootstrap and build commands.
-3. Add project-specific architecture and test documentation.
-4. Commit the standard together with the initial project configuration.
-5. Keep duplicate skills synchronized when editing the standard.
-
-## Updating a skill
-
-Because symbolic links are intentionally not used, every shared skill exists twice:
-
-```text
-.agents/skills/<name>/SKILL.md
-.claude/skills/<name>/SKILL.md
-```
-
-When changing one copy, apply the identical change to the other copy and verify they match.
-
-A simple verification command is:
+Bootstrap the build tool once, from the repository root:
 
 ```sh
-diff -ru .agents/skills .claude/skills
+gcc nob.c -o nob
 ```
 
-No output means the two skill trees are identical.
+Then:
 
-## Included skills
+```sh
+./nob            # build the library (lib/libAntTweakBar.a + the platform dynamic library)
+./nob -clean     # remove all generated build output
+./nob -examples  # build the example programs (requires ./nob to have run first)
+./nob -help      # list all flags
+```
 
-- `git-workflow`
-- `minimal-patch`
-- `bug-investigation`
-- `existing-pattern`
-- `code-review`
-- `build-verification`
-- `large-feature-development`
-- `documentation-update`
-- `release-checklist`
+`./nob` produces:
 
-## Project-specific rules
+- `lib/libAntTweakBar.a` — static library
+- `lib/libAntTweakBar.so` (Linux) / `lib/libAntTweakBar.dylib` (macOS) /
+  `lib/libAntTweakBar.dll` + `lib/libAntTweakBar.dll.a` (Windows/MinGW) —
+  dynamic library
 
-Do not add project-specific architecture details to reusable skills.
+`./nob -examples` compiles every example under `examples/` statically against
+`lib/libAntTweakBar.a` into `build/examples/`, and fails with a clear message
+if `lib/libAntTweakBar.a` doesn't exist yet (i.e. if `./nob` hasn't been run).
+See [`examples/Readme.txt`](examples/Readme.txt) for the list of examples and
+their external dependencies (GLFW3, GLUT).
 
-Place them in:
+Supported platforms: Linux, macOS, and Windows (MinGW).
 
-- the **Project-Specific Information** section of `AGENTS.md`;
-- normal project documentation;
-- a task-specific plan under `docs/plans/`.
+## License
 
-The root standard can later be extended with rules for individual subdirectories, but this package intentionally does not include them.
+See [`License.txt`](License.txt).

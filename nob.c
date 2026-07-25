@@ -52,8 +52,6 @@ static const Example examples[] = {
     { EXAMPLES_FOLDER "TwDualGLUT.c",       EXAMPLE_GLUT },
     { EXAMPLES_FOLDER "TwString.cpp",       EXAMPLE_GLUT },
     { EXAMPLES_FOLDER "TwSimpleGLFW.c",     EXAMPLE_GLFW },
-    { EXAMPLES_FOLDER "TwSimpleGLFW3.c",    EXAMPLE_GLFW },
-    { EXAMPLES_FOLDER "TwSimpleGLFW34.c",   EXAMPLE_GLFW },
     { EXAMPLES_FOLDER "TwAdvanced1.cpp",    EXAMPLE_GLFW },
     { EXAMPLES_FOLDER "TwMultiCubesGLFW.c", EXAMPLE_GLFW },
     { EXAMPLES_FOLDER "TwQuadGLFW.c",       EXAMPLE_GLFW },

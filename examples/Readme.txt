@@ -33,8 +33,8 @@ Examples:
 
 - TwSimpleGLUT.c, TwDualGLUT.c (dual window), TwString.cpp (std::string /
   C-dynamic-string demo) - GLUT-based.
-- TwSimpleGLFW.c, TwSimpleGLFW3.c, TwSimpleGLFW34.c, TwAdvanced1.cpp (richest
-  demo: enums, custom structs, groups) - GLFW3 + GLAD.
+- TwSimpleGLFW.c, TwAdvanced1.cpp (richest demo: enums, custom structs,
+  groups) - GLFW3 + GLAD.
 - TwMultiCubesGLFW.c, TwQuadGLFW.c, TwStripGLFW.c, TwTriangleGLFW.c,
   TwSpongeGLFW.cpp (Menger sponge), TwParticlesGLFW.c - GLFW3 + GLAD ports of
   the library's original SDL, DirectX9/10/11, and SFML examples (this
