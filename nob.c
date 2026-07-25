@@ -389,6 +389,24 @@ static bool check_examples_deps(void)
         nob_log(NOB_ERROR, "Run `./nob` first to build the library, then `./nob -examples`.");
         return false;
     }
+#if !defined(_WIN32) && !defined(__APPLE__)
+    // The GLUT-based examples (TwSimpleGLUT.c, TwDualGLUT.c, TwString.cpp)
+    // need real (free)glut headers on Linux; macOS uses the system
+    // GLUT.framework instead (no install needed there) and Windows/MinGW
+    // has no single canonical header path to preflight-check across the
+    // different MSYS2 environments, so a missing package there still
+    // surfaces as a normal compiler error.
+    if (!nob_file_exists("/usr/include/GL/freeglut.h")) {
+        nob_log(NOB_ERROR, "Missing freeglut development headers: GL/freeglut.h");
+        nob_log(NOB_ERROR, "On Ubuntu/Debian install them with:");
+        nob_log(NOB_ERROR, "    sudo apt update && sudo apt install freeglut3-dev");
+        nob_log(NOB_ERROR, "On Fedora:");
+        nob_log(NOB_ERROR, "    sudo dnf install freeglut-devel");
+        nob_log(NOB_ERROR, "On Arch:");
+        nob_log(NOB_ERROR, "    sudo pacman -S freeglut");
+        return false;
+    }
+#endif
     return true;
 }
 
