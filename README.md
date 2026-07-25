@@ -1,50 +1,80 @@
-## AntTweakBar Library v1.16b
+# AI Development Standard
 
-[AntTweakBar](https://anttweakbar.sourceforge.io/doc) (**ATB**) is a small and easy-to-use C/C++ library developed by [Philippe Decaudin](https://phildec.users.sourceforge.net/).  
-**ATB** allows programmers to quickly add a lightweight and intuitive GUI to OpenGL- and DirectX-based graphics programs, enabling real-time parameter tweaking.  
-Representative screenshots can be found, for example, on the [magnoom](https://github.com/n-s-kiselev/magnoom) page.
+This package provides a reusable project instruction infrastructure for working with both OpenAI Codex and Claude Code.
 
-This package contains the **development version** of AntTweakBar for **GNU/Linux** and **macOS**.
+## Included files
 
-> 🔧 **Update:**  
-> I only fixed a few typos in the [development version](https://anttweakbar.sourceforge.io/doc/tools_anttweakbar_download.html) and added `install` and `uninstall` targets to the Makefiles for my personal convenience.
-
----
-
-### Building and installing system-wide:
-
-On Linux:
-```bash
-cd src
-make clean
-make
-sudo make install
-````
-
-On MacOS:
-```bash
-cd src
-make -f Makefile.os clean
-make -f Makefile.os
-sudo make -f Makefile.os install
+```text
+AGENTS.md
+CLAUDE.md
+PLANS.md
+.agents/skills/
+.claude/skills/
 ```
 
-###  Uninstalling
+`AGENTS.md` is the shared source of truth.
 
-On Linux:
-```bash
-sudo make uninstall
+`CLAUDE.md` imports `AGENTS.md` with:
+
+```markdown
+@AGENTS.md
 ```
 
-On MacOS:
-```bash
-sudo make -f Makefile.os uninstall
+The skills are duplicated intentionally under both `.agents/skills/` and `.claude/skills/`. No symbolic links are used.
+
+## Installation
+
+Copy all files and directories from this package into the root of a project repository.
+
+Do not overwrite an existing `AGENTS.md`, `CLAUDE.md`, or `PLANS.md` without reviewing and merging project-specific instructions.
+
+After copying:
+
+1. Complete the **Project-Specific Information** section in `AGENTS.md`.
+2. Verify the bootstrap and build commands.
+3. Add project-specific architecture and test documentation.
+4. Commit the standard together with the initial project configuration.
+5. Keep duplicate skills synchronized when editing the standard.
+
+## Updating a skill
+
+Because symbolic links are intentionally not used, every shared skill exists twice:
+
+```text
+.agents/skills/<name>/SKILL.md
+.claude/skills/<name>/SKILL.md
 ```
 
-Have fun!
+When changing one copy, apply the identical change to the other copy and verify they match.
 
----
-> ⚠️ **Note:**
-> This version of AntTweakBar only supports **legacy versions** of GLFW and SDL (not compatible with GLFW 3 or SDL 2).
-> I’m working on an updated version with modern backend support: [AntTweakBarGLFW3 (WIP)](https://github.com/n-s-kiselev/AntTweakBarGLFW3)
----
+A simple verification command is:
+
+```sh
+diff -ru .agents/skills .claude/skills
+```
+
+No output means the two skill trees are identical.
+
+## Included skills
+
+- `git-workflow`
+- `minimal-patch`
+- `bug-investigation`
+- `existing-pattern`
+- `code-review`
+- `build-verification`
+- `large-feature-development`
+- `documentation-update`
+- `release-checklist`
+
+## Project-specific rules
+
+Do not add project-specific architecture details to reusable skills.
+
+Place them in:
+
+- the **Project-Specific Information** section of `AGENTS.md`;
+- normal project documentation;
+- a task-specific plan under `docs/plans/`.
+
+The root standard can later be extended with rules for individual subdirectories, but this package intentionally does not include them.

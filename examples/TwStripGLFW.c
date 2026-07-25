@@ -1,0 +1,136 @@
+//  ---------------------------------------------------------------------------
+//
+//  @file       TwStripGLFW.c
+//  @brief      A simple example that uses AntTweakBar with GLFW3 and OpenGL.
+//              Ported from TwSimpleDX9.cpp (originally Direct3D9-based).
+//              Draws an animated color-gradient triangle strip.
+//
+//              AntTweakBar: http://anttweakbar.sourceforge.net/doc
+//              OpenGL:      http://www.opengl.org
+//              GLFW:        http://www.glfw.org
+//
+//  ---------------------------------------------------------------------------
+
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include <AntTweakBar.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+static int g_Width = 640, g_Height = 480;
+
+static void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
+{
+    (void)scancode;
+    if (action != GLFW_PRESS && action != GLFW_REPEAT) return;
+    int twMod = 0;
+    if (mods & GLFW_MOD_SHIFT) twMod |= TW_KMOD_SHIFT;
+    if (mods & GLFW_MOD_CONTROL) twMod |= TW_KMOD_CTRL;
+    if (mods & GLFW_MOD_ALT) twMod |= TW_KMOD_ALT;
+    if (key == GLFW_KEY_ESCAPE) glfwSetWindowShouldClose(window, 1);
+    else if (key >= 0 && key < 128) TwKeyPressed(key, twMod);
+}
+
+static void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
+{
+    (void)window; (void)mods;
+    TwEventMouseButtonGLFW(button, action);
+}
+
+static void mousePosCallback(GLFWwindow *window, double x, double y)
+{
+    (void)window;
+    TwEventMousePosGLFW((int)x, (int)y);
+}
+
+static void windowSizeCallback(GLFWwindow *window, int width, int height)
+{
+    (void)window;
+    if (height == 0) height = 1;
+    g_Width = width;
+    g_Height = height;
+    glViewport(0, 0, width, height);
+    TwWindowSize(width, height);
+}
+
+int main(void)
+{
+    int numSec = 100;             // number of strip sections
+    float color[] = { 1, 0, 0 };  // strip color
+    unsigned char bgColor[] = { 128, 196, 196, 255 }; // background color (32bits RGBA: R,G,B,A)
+
+    if (!glfwInit()) {
+        fprintf(stderr, "GLFW initialization failed\n");
+        return 1;
+    }
+
+    GLFWwindow *window = glfwCreateWindow(g_Width, g_Height, "AntTweakBar + GLFW: gradient strip", NULL, NULL);
+    if (!window) {
+        fprintf(stderr, "Cannot open GLFW window\n");
+        glfwTerminate();
+        return 1;
+    }
+    glfwMakeContextCurrent(window);
+
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        fprintf(stderr, "Failed to initialize GLAD\n");
+        return 1;
+    }
+
+    if (!TwInit(TW_OPENGL, NULL)) {
+        fprintf(stderr, "AntTweakBar initialization failed: %s\n", TwGetLastError());
+        return 1;
+    }
+
+    {
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+        windowSizeCallback(window, width, height);
+    }
+
+    TwBar *bar = TwNewBar("TweakBar");
+    TwDefine(" GLOBAL help='This example shows how to integrate AntTweakBar with GLFW and OpenGL.' ");
+    TwDefine(" TweakBar color='128 224 160' text=dark ");
+
+    TwAddVarRW(bar, "NumSec", TW_TYPE_INT32, &numSec,
+               " label='Strip length' min=1 max=1000 keyIncr=s keyDecr=S help='Number of segments of the strip.' ");
+    TwAddVarRW(bar, "Color", TW_TYPE_COLOR3F, &color, " label='Strip color' ");
+    TwAddVarRW(bar, "BgColor", TW_TYPE_COLOR32, &bgColor, " label='Background color' ");
+    TwAddVarRO(bar, "Width", TW_TYPE_INT32, &g_Width, " label='wnd width' help='Current graphics window width.' ");
+    TwAddVarRO(bar, "Height", TW_TYPE_INT32, &g_Height, " label='wnd height' help='Current graphics window height.' ");
+
+    glfwSetKeyCallback(window, keyCallback);
+    glfwSetMouseButtonCallback(window, mouseButtonCallback);
+    glfwSetCursorPosCallback(window, mousePosCallback);
+    glfwSetWindowSizeCallback(window, windowSizeCallback);
+
+    while (!glfwWindowShouldClose(window)) {
+        glClearColor(bgColor[2] / 255.0f, bgColor[1] / 255.0f, bgColor[0] / 255.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        float t = (float)glfwGetTime();
+        glBegin(GL_TRIANGLE_STRIP);
+        for (int i = 0; i <= numSec; ++i) {
+            float s = (float)i / 100.0f;
+            float x0 = 0.05f + 0.7f * cosf(2.0f * s + 5.0f * t);
+            float x1 = x0 + (0.25f + 0.1f * cosf(s + t));
+            float y = 0.7f * (0.7f + 0.3f * sinf(s + t)) * sinf(1.5f * s + 3.0f * t);
+            float sc = (float)i / numSec;
+
+            glColor3f(color[0] * sc, color[1] * sc, color[2] * sc);
+            glVertex2f(x0, y);
+            glVertex2f(x1, y);
+        }
+        glEnd();
+
+        TwDraw();
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    TwTerminate();
+    glfwTerminate();
+    return 0;
+}

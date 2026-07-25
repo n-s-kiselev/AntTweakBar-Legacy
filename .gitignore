@@ -23,6 +23,17 @@
 lib/debug
 lib/*.lib
 lib/*.dll
+lib/*.dll.a
 lib/*.exp
 lib/*.so
 lib/*.so.*
+lib/*.dylib
+lib/*.a
+/nob
+/nob.exe
+/nob.old
+/build/
+AGENTS.md
+CLAUDE.md
+PLANS.md
+/docs
