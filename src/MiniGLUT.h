@@ -30,12 +30,13 @@
 #   define GLUT_API      extern
 #endif
 
+// Only GL/gl.h is needed here: this header declares GLUT_* window/event
+// constants (a different namespace from the GLU utility library) for
+// TwEventGLUT.c, which never calls any glu*() function.
 #if defined(_MACOSX)
 #   include <OpenGL/gl.h>
-#   include <OpenGL/glu.h>
 #else
 #   include <GL/gl.h>  // must be included after windows.h
-#   include <GL/glu.h>
 #endif
 
 #ifdef __cplusplus
