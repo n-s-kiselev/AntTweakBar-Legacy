@@ -1,7 +1,7 @@
 //  ---------------------------------------------------------------------------
 //
 //  @file       TwTriangleGLFW.c
-//  @brief      A simple example that uses AntTweakBar with GLFW3 and OpenGL.
+//  @brief      A simple example that uses AntTweakBar with GLFW2 and OpenGL.
 //              Ported from TwSimpleDX10.cpp (originally Direct3D10-based).
 //              Draws a triangle and allows the user to tweak its vertex
 //              positions and colors, using a custom TwDefineStruct'd 2D point.
@@ -13,7 +13,7 @@
 //  ---------------------------------------------------------------------------
 
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include "TwGLFW2.h"
 #include <AntTweakBar.h>
 
 #include <stddef.h>

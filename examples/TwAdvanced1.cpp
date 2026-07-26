@@ -23,7 +23,7 @@
 //  ---------------------------------------------------------------------------
 
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include "TwGLFW2.h"
 #include <AntTweakBar.h>
 
 #include <cmath>
@@ -755,7 +755,7 @@ void TW_CALL GetSubdivCB(void *value, void *clientData)
 // Main function
 int main() 
 {
-    GLFWwindow* window; // GLFW3 window
+    GLFWwindow* window; // GLFW2 single-window adapter
     // Intialize GLFW   
     if (!glfwInit()) {
         fprintf(stderr, "GLFW initialization failed\n");

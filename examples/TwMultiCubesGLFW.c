@@ -1,8 +1,8 @@
 //  ---------------------------------------------------------------------------
 //
 //  @file       TwMultiCubesGLFW.c
-//  @brief      A simple example that uses AntTweakBar with GLFW3 and OpenGL.
-//              Ported from TwSimpleSDL.c (originally SDL 1.2-based) to GLFW3.
+//  @brief      A simple example that uses AntTweakBar with GLFW2 and OpenGL.
+//              Ported from TwSimpleSDL.c (originally SDL 1.2-based) to GLFW2.
 //
 //              AntTweakBar: http://anttweakbar.sourceforge.net/doc
 //              OpenGL:      http://www.opengl.org
@@ -11,7 +11,7 @@
 //  ---------------------------------------------------------------------------
 
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include "TwGLFW2.h"
 #include <AntTweakBar.h>
 
 #include <stdio.h>

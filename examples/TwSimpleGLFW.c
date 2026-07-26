@@ -15,7 +15,7 @@
 
 #include <glad/glad.h>
 // #include <GL/glu.h>
-#include <GLFW/glfw3.h>
+#include "TwGLFW2.h"
 #include <AntTweakBar.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -306,7 +306,7 @@ void error_callback(int error, const char* description)
 // Main
 int main() 
 {  
-  GLFWwindow* window; // GLFW3 window
+  GLFWwindow* window; // GLFW2 single-window adapter
   TwBar *bar;         // Pointer to a tweak bar
     
   double time = 0, dt;// Current time and enlapsed time

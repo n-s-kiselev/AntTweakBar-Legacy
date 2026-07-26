@@ -1,7 +1,7 @@
 //  ---------------------------------------------------------------------------
 //
 //  @file       TwQuadGLFW.c
-//  @brief      An example that uses AntTweakBar with GLFW3 and OpenGL.
+//  @brief      An example that uses AntTweakBar with GLFW2 and OpenGL.
 //              Ported from TwGLCoreSDL.c (originally SDL 1.3 + OpenGL Core
 //              Profile-based). This AntTweakBar build does not support the
 //              OpenGL Core Profile (TW_OPENGL_CORE crashes), so this example
@@ -15,7 +15,7 @@
 //  ---------------------------------------------------------------------------
 
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include "TwGLFW2.h"
 #include <AntTweakBar.h>
 
 #include <stdio.h>

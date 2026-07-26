@@ -2,7 +2,7 @@
 //
 //  @file       TwSpongeGLFW.cpp
 //
-//  @brief      Example that uses AntTweakBar with GLFW3 and OpenGL. Ported
+//  @brief      Example that uses AntTweakBar with GLFW2 and OpenGL. Ported
 //              from TwSimpleDX11.cpp+.hlsl (originally Direct3D11-based).
 //
 //              It draws a Menger sponge, aka Sierpinski cube:
@@ -16,7 +16,7 @@
 //              original Direct3D11 example (it never depended on Direct3D);
 //              only the rendering backend (device/buffers) and the
 //              window/event loop are ported, from Direct3D11+Win32 to
-//              OpenGL (fixed-function pipeline)+GLFW3. This AntTweakBar
+//              OpenGL (fixed-function pipeline)+GLFW2. This AntTweakBar
 //              build does not support the OpenGL Core Profile
 //              (TW_OPENGL_CORE crashes), so shading uses fixed-function
 //              lighting (GL_LIGHT0) instead of the original's custom vertex
@@ -30,7 +30,7 @@
 //  ---------------------------------------------------------------------------
 
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include "TwGLFW2.h"
 #include <AntTweakBar.h>
 
 #include <cmath>

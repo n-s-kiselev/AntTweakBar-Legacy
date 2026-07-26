@@ -1,7 +1,7 @@
 //  ---------------------------------------------------------------------------
 //
 //  @file       TwParticlesGLFW.c
-//  @brief      A simple example that uses AntTweakBar with GLFW3 and OpenGL.
+//  @brief      A simple example that uses AntTweakBar with GLFW2 and OpenGL.
 //              Ported from TwSimpleSFML.cpp (originally SFML-based).
 //              This example draws moving cubic particles with some
 //              interactive control on particles generation.
@@ -13,7 +13,7 @@
 //  ---------------------------------------------------------------------------
 
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include "TwGLFW2.h"
 #include <AntTweakBar.h>
 
 #include <stdio.h>

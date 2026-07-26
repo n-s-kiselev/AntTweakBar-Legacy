@@ -1,7 +1,7 @@
 //  ---------------------------------------------------------------------------
 //
 //  @file       TwStripGLFW.c
-//  @brief      A simple example that uses AntTweakBar with GLFW3 and OpenGL.
+//  @brief      A simple example that uses AntTweakBar with GLFW2 and OpenGL.
 //              Ported from TwSimpleDX9.cpp (originally Direct3D9-based).
 //              Draws an animated color-gradient triangle strip.
 //
@@ -12,7 +12,7 @@
 //  ---------------------------------------------------------------------------
 
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include "TwGLFW2.h"
 #include <AntTweakBar.h>
 
 #include <stdio.h>

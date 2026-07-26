@@ -1,13 +1,8 @@
 // glfw2_unity.c - single-file compilation of the vendored GLFW 2.7.9 sources
 // under lib/, so the TwSimpleGLFW2.c example links against a built-in GLFW2
-// instead of requiring one to be installed system-wide. Pattern follows
-// vendor/glfw/glfw_unity.c (GLFW3's own unity wrapper).
-//
-// GLFW2 is vendored alongside (not instead of) GLFW3 to let TwSimpleGLFW2.c
-// verify whether AntTweakBar's custom cursors, which don't render correctly
-// under GLFW3 (see docs/plans/glfw-cursor-rendering-fix.md), render
-// correctly under GLFW2 - the GLFW version AntTweakBar's cursor code and
-// TwEventGLFW.c helper were originally written against.
+// instead of requiring one to be installed system-wide. Every GLFW example
+// uses this version because it matches the event and native-cursor integration
+// AntTweakBar originally supported.
 //
 // Platform backend selection (must be defined by the build before this file
 // is compiled - see append_glfw2_flags() in nob.c):

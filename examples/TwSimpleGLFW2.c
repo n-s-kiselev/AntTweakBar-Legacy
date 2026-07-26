@@ -6,12 +6,8 @@
 //
 //              Adapted, for static linking against the vendored GLFW 2.7.9
 //              (vendor/glfw2/), from the original AntTweakBar 1.16 SDK
-//              example of the same name. Exists alongside the GLFW3-based
-//              examples to verify whether AntTweakBar's custom cursors -
-//              which don't render correctly under GLFW3 (see
-//              docs/plans/glfw-cursor-rendering-fix.md) - render correctly
-//              under GLFW2, the GLFW version this library's cursor code and
-//              TwEventGLFW.c helper were originally written against.
+//              example of the same name. It remains the direct reference
+//              implementation for the GLFW2 adapter used by other examples.
 //
 //              AntTweakBar: http://anttweakbar.sourceforge.net/doc
 //              OpenGL:      http://www.opengl.org
@@ -224,7 +220,7 @@ int main()
     // TwInit) scales the font metrics that ALL of its widget-layout math
     // derives from (row height, button/slider size, panel size, ...), so
     // scaling it by g_ScaleX (see ComputeHiDPIScale() above - GLFW2 has no
-    // glfwGetWindowContentScale() equivalent, unlike GLFW3) makes the whole
+    // content-scale query, so this measured equivalent makes the whole
     // bar render at a comparable physical size to a standard display,
     // without touching any library source. On a standard (non-HiDPI)
     // display g_ScaleX is 1.0, so this is a no-op there.
