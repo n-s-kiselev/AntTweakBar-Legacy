@@ -40,8 +40,10 @@ Then:
 `./nob -examples` compiles every example under `examples/` statically against
 `lib/libAntTweakBar.a` into `build/examples/`, and fails with a clear message
 if `lib/libAntTweakBar.a` doesn't exist yet (i.e. if `./nob` hasn't been run).
-See [`examples/Readme.txt`](examples/Readme.txt) for the list of examples and
-their external dependencies (GLFW3, GLUT).
+GLFW3 and (on Linux/Windows) FreeGLUT are vendored under `vendor/` and built
+from source as part of this step, so no external GLFW/GLUT install is
+needed; see [`examples/Readme.txt`](examples/Readme.txt) for details,
+including macOS's use of the system `GLUT.framework`.
 
 Supported platforms: Linux, macOS, and Windows (MinGW).
 

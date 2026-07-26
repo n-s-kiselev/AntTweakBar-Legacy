@@ -12,14 +12,21 @@ with a clear message if lib/libAntTweakBar.a doesn't exist yet.
 
 External dependencies (examples only; the library itself has none):
 
-- GLFW3 (https://www.glfw.org) - required by every example below except the
-  three GLUT-based ones. Install via your platform's package manager
-  (e.g. `apt install libglfw3-dev`, `brew install glfw`, or the MSYS2 package
-  `mingw-w64-x86_64-glfw` on Windows) or let pkg-config find an existing build.
-- GLUT - on macOS, the system's built-in (deprecated) GLUT.framework is used
-  automatically, no install needed. On Linux, install freeglut
-  (`apt install freeglut3-dev`). On Windows/MinGW, install freeglut via MSYS2
-  (`mingw-w64-x86_64-freeglut`).
+- GLFW3 - vendored under vendor/glfw and built from source as part of
+  `./nob -examples` on every platform (Linux, macOS, Windows/MinGW). No
+  system GLFW3 install needed.
+- GLUT - required only by the three GLUT-based examples below.
+  - On macOS, the system's built-in (deprecated) GLUT.framework is used
+    automatically; no install needed. FreeGLUT itself isn't vendored on
+    macOS because upstream's own Cocoa backend is still labeled
+    experimental (see docs/plans/vendor-glfw-freeglut.md); the system
+    framework is the better-tested option today.
+  - On Linux and Windows/MinGW, FreeGLUT is vendored under vendor/freeglut
+    and built from source as part of `./nob -examples`. No system
+    freeglut install needed. Linux still needs the system X11 development
+    headers/libs (`sudo apt install xorg-dev mesa-common-dev` on
+    Ubuntu/Debian, or the equivalent on other distros) - `./nob` checks
+    for these before building the library itself.
 
 GLAD (OpenGL loader) is vendored under vendor/glad and needs no separate
 install.
