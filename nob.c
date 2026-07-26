@@ -531,6 +531,11 @@ static bool build_freeglut(const char *nob_exe)
             Nob_Cmd cmd = {0};
             nob_cmd_append(&cmd, "cc", "-O2", "-DHAVE_CONFIG_H",
                            "-I" FREEGLUT_CONFIG_INCLUDE, "-I" FREEGLUT_SRC_FOLDER, "-I" FREEGLUT_INCLUDE);
+            // Neither FreeGLUT's own sources nor these examples call any
+            // GLU function; skip freeglut_std.h's unconditional GL/glu.h
+            // include (a separate dev package on many distros) and provide
+            // GL/gl.h (already required to build the library itself) instead.
+            nob_cmd_append(&cmd, "-DFREEGLUT_NO_GL_INCLUDE", "-include", "GL/gl.h");
 #if defined(_WIN32)
             nob_cmd_append(&cmd, "-DFREEGLUT_STATIC");
 #endif
@@ -563,14 +568,15 @@ static void append_glut_flags(Nob_Cmd *cmd)
 #if defined(__APPLE__)
     nob_cmd_append(cmd, "-framework", "GLUT", "-framework", "OpenGL");
 #elif defined(_WIN32)
-    nob_cmd_append(cmd, FREEGLUT_LIB, "-lopengl32", "-lglu32", "-lgdi32", "-lwinmm", "-luser32");
+    nob_cmd_append(cmd, FREEGLUT_LIB, "-lopengl32", "-lgdi32", "-lwinmm", "-luser32");
 #else
     // -lX11 -lpthread -ldl: lib/libAntTweakBar.a itself needs these on Linux
     // (e.g. TwMgr.cpp's XCreateBitmapFromData for X11 cursors, LoadOGL.cpp's
     // dlopen-based GL loading) - since examples link the archive statically,
     // these must be listed here too, not just for the vendored FreeGLUT's
-    // own X11/extension libs.
-    nob_cmd_append(cmd, FREEGLUT_LIB, "-lGL", "-lGLU", "-lX11", "-lXrandr", "-lXi", "-lXxf86vm",
+    // own X11/extension libs. No -lGLU: neither FreeGLUT nor these examples
+    // call any GLU function (see the FREEGLUT_NO_GL_INCLUDE comment above).
+    nob_cmd_append(cmd, FREEGLUT_LIB, "-lGL", "-lX11", "-lXrandr", "-lXi", "-lXxf86vm",
                         "-lpthread", "-ldl", "-lm");
 #endif
 }
@@ -627,6 +633,9 @@ static bool build_example(const Example *example, const char *nob_exe)
         nob_cmd_append(&cmd, "-D_MACOSX");
 #else
         nob_cmd_append(&cmd, "-I" FREEGLUT_INCLUDE);
+        // See the matching comment in build_freeglut(): these examples
+        // never call GLU, so skip freeglut_std.h's GL/glu.h include.
+        nob_cmd_append(&cmd, "-DFREEGLUT_NO_GL_INCLUDE", "-include", "GL/gl.h");
 #if defined(_WIN32)
         nob_cmd_append(&cmd, "-DFREEGLUT_STATIC");
 #endif
