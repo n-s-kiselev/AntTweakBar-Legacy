@@ -380,8 +380,9 @@ int main()
     
   // Create a tweak bar
   bar = TwNewBar("TweakBar");
+  tw_glfw2_set_bar_size(bar, 220, 530);
   TwDefine(" GLOBAL help='This example shows how to integrate AntTweakBar with GLFW and OpenGL.' "); // Message added to the help bar.
-  TwDefine(" TweakBar size='220 530' color='100 100 50' alpha=200 ");
+  TwDefine(" TweakBar color='100 100 50' alpha=200 ");
   // Add 'speed' to 'bar': it is a modifable (RW) variable of type TW_TYPE_DOUBLE. Its key shortcuts are [s] and [S].
   TwAddVarRW(bar, "speed", TW_TYPE_DOUBLE, &speed, 
               " label='Rot speed' min=0 max=2 step=0.01 keyIncr=s keyDecr=S help='Rotation speed (turns/second)' ");

@@ -6,6 +6,7 @@
 // windowing operations are provided by the vendored GLFW 2.7.9 library.
 #define GLFW_NO_GLU
 #include <GL/glfw.h>
+#include <AntTweakBar.h>
 
 typedef struct TwGLFW2Window { int unused; } GLFWwindow;
 typedef void (*TwGLFW2ErrorFun)(int, const char *);
@@ -91,6 +92,14 @@ static void tw_glfw2_get_framebuffer_size(GLFWwindow *window, int *width, int *h
 }
 static void tw_glfw2_get_content_scale(GLFWwindow *window, float *xscale, float *yscale)
 { (void)window; tw_glfw2_measure_scale(); *xscale = (float)tw_glfw2_scale_x; *yscale = (float)tw_glfw2_scale_y; }
+static void tw_glfw2_set_bar_size(TwBar *bar, int width, int height)
+{
+    int size[2];
+    tw_glfw2_measure_scale();
+    size[0] = (int)(width * tw_glfw2_scale_x + 0.5);
+    size[1] = (int)(height * tw_glfw2_scale_y + 0.5);
+    TwSetParam(bar, NULL, "size", TW_PARAM_INT32, 2, size);
+}
 static void tw_glfw2_get_cursor_pos(GLFWwindow *window, double *x, double *y)
 { int ix, iy; (void)window; glfwGetMousePos(&ix, &iy); *x = ix; *y = iy; }
 static int tw_glfw2_window_should_close(GLFWwindow *window)

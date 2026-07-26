@@ -207,6 +207,7 @@ int main(void)
     }
 
     TwBar *bar = TwNewBar("Particles");
+    tw_glfw2_set_bar_size(bar, 200, 320);
     TwDefine(" GLOBAL help='This example shows how to integrate AntTweakBar with GLFW and OpenGL.' ");
     int barPos[2] = {16, 240};
     TwSetParam(bar, NULL, "position", TW_PARAM_INT32, 2, barPos);

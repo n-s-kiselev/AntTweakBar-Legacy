@@ -235,6 +235,13 @@ int main()
 
     // Create a tweak bar
     bar = TwNewBar("TweakBar");
+    {
+        int barSize[2] = {
+            (int)(200*g_ScaleX + 0.5),
+            (int)(320*g_ScaleY + 0.5)
+        };
+        TwSetParam(bar, NULL, "size", TW_PARAM_INT32, 2, barSize);
+    }
     TwDefine(" GLOBAL help='This example shows how to integrate AntTweakBar with GLFW2 and OpenGL.' "); // Message added to the help bar.
 
     // Add 'speed' to 'bar': it is a modifable (RW) variable of type TW_TYPE_DOUBLE. Its key shortcuts are [s] and [S].

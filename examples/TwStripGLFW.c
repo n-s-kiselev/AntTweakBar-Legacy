@@ -140,6 +140,7 @@ int main(void)
     }
 
     TwBar *bar = TwNewBar("TweakBar");
+    tw_glfw2_set_bar_size(bar, 200, 320);
     TwDefine(" GLOBAL help='This example shows how to integrate AntTweakBar with GLFW and OpenGL.' ");
     TwDefine(" TweakBar color='128 224 160' text=dark ");
 

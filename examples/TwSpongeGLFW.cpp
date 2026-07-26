@@ -562,9 +562,8 @@ int main(void)
     }
 
     TwBar *bar = TwNewBar("TweakBar");
+    tw_glfw2_set_bar_size(bar, 224, 320);
     TwDefine(" GLOBAL help='This example shows how to integrate AntTweakBar with GLFW and OpenGL.' ");
-    int barSize[2] = {224, 320};
-    TwSetParam(bar, NULL, "size", TW_PARAM_INT32, 2, barSize);
 
     TwAddVarCB(bar, "Level", TW_TYPE_INT32, SetSpongeLevelCB, GetSpongeLevelCB, NULL, "min=0 max=3 group=Sponge keyincr=l keydecr=L");
     TwAddVarCB(bar, "Ambient Occlusion", TW_TYPE_BOOLCPP, SetSpongeAOCB, GetSpongeAOCB, NULL, "group=Sponge key=o");

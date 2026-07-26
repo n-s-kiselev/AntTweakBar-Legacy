@@ -395,6 +395,7 @@ void Scene::CreateBar()
 {
     // Create a new tweak bar and change its label, position and transparency
     lightsBar = TwNewBar("Lights");
+    tw_glfw2_set_bar_size(lightsBar, 200, 320);
     TwDefine(" Lights label='Lights TweakBar' position='580 16' alpha=0 help='Use this bar to edit the lights in the scene.' ");
 
     // Add a variable of type int to control the number of lights
@@ -829,7 +830,8 @@ int main()
 
     // Create a tweak bar called 'Main' and change its refresh rate, position, size and transparency
     TwBar *mainBar = TwNewBar("Main");
-    TwDefine(" Main label='Main TweakBar' refresh=0.5 position='16 16' size='260 320' alpha=0");
+    tw_glfw2_set_bar_size(mainBar, 260, 320);
+    TwDefine(" Main label='Main TweakBar' refresh=0.5 position='16 16' alpha=0");
 
     // Add some variables to the Main tweak bar
     TwAddVarRW(mainBar, "Wireframe", TW_TYPE_BOOLCPP, &scene.Wireframe, 
