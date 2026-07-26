@@ -28,9 +28,7 @@
 #define GLAD_SRC              "vendor/glad/src/glad.c"
 #define GLAD_OBJ              EXAMPLES_BUILD_FOLDER "glad.o"
 
-// FreeGLUT is vendored for Linux and Windows (see build_freeglut()); macOS
-// keeps using its built-in (deprecated) GLUT.framework instead, since
-// upstream FreeGLUT's Cocoa backend is still explicitly labeled experimental.
+// FreeGLUT is vendored for every supported platform (see build_freeglut()).
 #define FREEGLUT_INCLUDE      "vendor/freeglut/include/"
 #define FREEGLUT_SRC_FOLDER   "vendor/freeglut/src/"
 #define FREEGLUT_BUILD_FOLDER EXAMPLES_BUILD_FOLDER "freeglut/"
@@ -63,9 +61,6 @@ typedef struct {
 // docs/plans/examples-glfw-port.md); all use the local GLFW2 build.
 static const Example examples[] = {
     { EXAMPLES_FOLDER "TwSimpleGLUT.c",     EXAMPLE_GLUT },
-#if !defined(__linux__)
-    { EXAMPLES_FOLDER "TwDualGLUT.c",       EXAMPLE_GLUT },
-#endif
     { EXAMPLES_FOLDER "TwString.cpp",       EXAMPLE_GLUT },
     { EXAMPLES_FOLDER "TwSimpleGLFW.c",     EXAMPLE_GLFW },
     { EXAMPLES_FOLDER "TwAdvanced1.cpp",    EXAMPLE_GLFW },
@@ -78,12 +73,13 @@ static const Example examples[] = {
     { EXAMPLES_FOLDER "TwSimpleGLFW2.c",    EXAMPLE_GLFW },
 };
 
-// Vendored FreeGLUT sources (Linux/Windows only - see build_freeglut()).
+// Vendored FreeGLUT sources (Linux, macOS, and Windows - see build_freeglut()).
 // Core list mirrors upstream's own non-CMake build (altbuild/Makefile);
-// backend lists mirror CMakeLists.txt's WIN32/X11 source lists.
-#if !defined(__APPLE__)
+// backend lists mirror CMakeLists.txt's WIN32/Cocoa/X11 source lists.
 #if defined(_WIN32)
 #define FREEGLUT_CONFIG_INCLUDE FREEGLUT_SRC_FOLDER "mswin/"
+#elif defined(__APPLE__)
+#define FREEGLUT_CONFIG_INCLUDE FREEGLUT_SRC_FOLDER "cocoa/"
 #else
 #define FREEGLUT_CONFIG_INCLUDE FREEGLUT_SRC_FOLDER "x11/"
 #endif
@@ -134,6 +130,25 @@ static const char *freeglut_platform_sources[] = {
     // Windows has no XParseGeometry() (no Xlib); freeglut supplies its own.
     FREEGLUT_SRC_FOLDER "util/xparsegeometry_repl.c",
 };
+#elif defined(__APPLE__)
+static const char *freeglut_platform_sources[] = {
+    FREEGLUT_SRC_FOLDER "cocoa/fg_cmap_cocoa.m",
+    FREEGLUT_SRC_FOLDER "cocoa/fg_cursor_cocoa.m",
+    FREEGLUT_SRC_FOLDER "cocoa/fg_display_cocoa.m",
+    FREEGLUT_SRC_FOLDER "cocoa/fg_ext_cocoa.c",
+    FREEGLUT_SRC_FOLDER "cocoa/fg_gamemode_cocoa.m",
+    FREEGLUT_SRC_FOLDER "cocoa/fg_glut_definitions_cocoa.c",
+    FREEGLUT_SRC_FOLDER "cocoa/fg_init_cocoa.m",
+    FREEGLUT_SRC_FOLDER "cocoa/fg_input_devices_cocoa.c",
+    FREEGLUT_SRC_FOLDER "cocoa/fg_joystick_cocoa.m",
+    FREEGLUT_SRC_FOLDER "cocoa/fg_main_cocoa.m",
+    FREEGLUT_SRC_FOLDER "cocoa/fg_spaceball_cocoa.m",
+    FREEGLUT_SRC_FOLDER "cocoa/fg_state_cocoa.m",
+    FREEGLUT_SRC_FOLDER "cocoa/fg_structure_cocoa.c",
+    FREEGLUT_SRC_FOLDER "cocoa/fg_window_cocoa.m",
+    // Cocoa has no Xlib, so upstream's feature probe selects this fallback.
+    FREEGLUT_SRC_FOLDER "util/xparsegeometry_repl.c",
+};
 #else
 static const char *freeglut_platform_sources[] = {
     FREEGLUT_SRC_FOLDER "x11/fg_cursor_x11.c",
@@ -156,7 +171,6 @@ static const char *freeglut_platform_sources[] = {
     FREEGLUT_SRC_FOLDER "x11/fg_window_x11_glx.c",
 };
 #endif
-#endif // !defined(__APPLE__)
 
 // Sources common to every platform: OpenGL backend + windowing-helper stubs
 // (GLFW/GLUT/SDL/SFML helpers only need the vendored "Mini*.h" headers, not
@@ -507,7 +521,6 @@ static bool build_glfw2(const char *nob_exe)
     return nob_cmd_run(&cmd);
 }
 
-#if !defined(__APPLE__)
 // Compiles the vendored FreeGLUT sources (see freeglut_core_sources /
 // freeglut_platform_sources) into build/examples/freeglut/*.o and archives
 // them into FREEGLUT_LIB, mirroring build_object()/build_static_archive()'s
@@ -543,10 +556,18 @@ static bool build_freeglut(const char *nob_exe)
             // GLU function; skip freeglut_std.h's unconditional GL/glu.h
             // include (a separate dev package on many distros) and provide
             // GL/gl.h (already required to build the library itself) instead.
-            nob_cmd_append(&cmd, "-DFREEGLUT_NO_GL_INCLUDE", "-include", "GL/gl.h");
+            nob_cmd_append(&cmd, "-DFREEGLUT_NO_GL_INCLUDE");
+#if defined(__APPLE__)
+            nob_cmd_append(&cmd, "-DTARGET_HOST_MACOS_COCOA=1", "-include", "OpenGL/gl.h");
+#else
+            nob_cmd_append(&cmd, "-include", "GL/gl.h");
+#endif
 #if defined(_WIN32)
             nob_cmd_append(&cmd, "-DFREEGLUT_STATIC");
 #endif
+            if (nob_sv_ends_with_cstr(nob_sv_from_cstr(source), ".m")) {
+                nob_cmd_append(&cmd, "-x", "objective-c");
+            }
             nob_cmd_append(&cmd, "-c", source, "-o", output);
             if (!nob_cmd_run(&cmd)) return false;
         } else {
@@ -569,12 +590,12 @@ static bool build_freeglut(const char *nob_exe)
     for (size_t i = 0; i < objects.count; ++i) nob_cmd_append(&ar, objects.items[i]);
     return nob_cmd_run(&ar);
 }
-#endif // !defined(__APPLE__)
 
 static void append_glut_flags(Nob_Cmd *cmd)
 {
 #if defined(__APPLE__)
-    nob_cmd_append(cmd, "-framework", "GLUT", "-framework", "OpenGL");
+    nob_cmd_append(cmd, FREEGLUT_LIB, "-framework", "Cocoa", "-framework", "OpenGL",
+                        "-framework", "IOKit", "-framework", "CoreVideo");
 #elif defined(_WIN32)
     nob_cmd_append(cmd, FREEGLUT_LIB, "-lopengl32", "-lgdi32", "-lwinmm", "-luser32");
 #else
@@ -624,11 +645,9 @@ static bool build_example(const Example *example, const char *nob_exe)
     if (example->kind == EXAMPLE_GLFW) {
         nob_da_append(&inputs, GLFW2_OBJ);
     }
-#if !defined(__APPLE__)
     else {
         nob_da_append(&inputs, FREEGLUT_LIB);
     }
-#endif
     add_common_build_deps(&inputs, nob_exe);
 
     if (!build_needed(output, inputs.items, inputs.count)) {
@@ -649,27 +668,25 @@ static bool build_example(const Example *example, const char *nob_exe)
     nob_cmd_append(&cmd, "-Wall", "-O2", "-DTW_STATIC", "-I" INCLUDE_FOLDER, "-I" GLAD_INCLUDE);
 
     if (example->kind == EXAMPLE_GLUT) {
-#if defined(__APPLE__)
-        // TwSimpleGLUT.c/TwDualGLUT.c/TwString.cpp branch on the library's own
-        // _MACOSX macro (not __APPLE__) to pick <GLUT/glut.h> over freeglut.
-        nob_cmd_append(&cmd, "-D_MACOSX");
-#else
         nob_cmd_append(&cmd, "-I" FREEGLUT_INCLUDE);
         // None of these examples call GLU, so skip freeglut_std.h's
         // GL/glu.h include (see the matching comment in build_freeglut()).
         nob_cmd_append(&cmd, "-DFREEGLUT_NO_GL_INCLUDE");
-        // TwSimpleGLUT.c/TwDualGLUT.c already #include <glad/glad.h> (and
-        // call gladLoadGL()) before their GLUT header, which fully replaces
+        // TwSimpleGLUT.c already #includes <glad/glad.h> (and calls
+        // gladLoadGL()) before its GLUT header, which fully replaces
         // GL/gl.h and pre-empts its include guard - forcing GL/gl.h here too
         // would make glad.h see the system header "already included" and
         // error out. TwString.cpp has no glad.h of its own, so it still
         // needs GL/gl.h's declarations restored some other way.
         if (strcmp(example->source, EXAMPLES_FOLDER "TwString.cpp") == 0) {
+#if defined(__APPLE__)
+            nob_cmd_append(&cmd, "-include", "OpenGL/gl.h");
+#else
             nob_cmd_append(&cmd, "-include", "GL/gl.h");
+#endif
         }
 #if defined(_WIN32)
         nob_cmd_append(&cmd, "-DFREEGLUT_STATIC");
-#endif
 #endif
     } else if (example->kind == EXAMPLE_GLFW) {
         append_glfw2_flags(&cmd);
@@ -700,9 +717,7 @@ static bool build_examples(const char *nob_exe)
     if (!nob_mkdir_if_not_exists(EXAMPLES_BUILD_FOLDER)) return false;
     if (!build_glad(nob_exe)) return false;
     if (!build_glfw2(nob_exe)) return false;
-#if !defined(__APPLE__)
     if (!build_freeglut(nob_exe)) return false;
-#endif
 
     for (size_t i = 0; i < NOB_ARRAY_LEN(examples); ++i) {
         if (!build_example(&examples[i], nob_exe)) return false;

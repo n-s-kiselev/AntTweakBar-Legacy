@@ -15,15 +15,11 @@ External dependencies (examples only; the library itself has none):
 - GLFW 2.7.9 - vendored under vendor/glfw2 and built from source as part of
   `./nob -examples` on every platform (Linux, macOS, Windows/MinGW). No
   system GLFW install needed.
-- GLUT - required only by the three GLUT-based examples below.
-  - On macOS, the system's built-in (deprecated) GLUT.framework is used
-    automatically; no install needed. FreeGLUT itself isn't vendored on
-    macOS because upstream's own Cocoa backend is still labeled
-    experimental (see docs/plans/vendor-glfw-freeglut.md); the system
-    framework is the better-tested option today.
-  - On Linux and Windows/MinGW, FreeGLUT is vendored under vendor/freeglut
-    and built from source as part of `./nob -examples`. No system
-    freeglut install needed. Linux still needs the system X11 development
+- FreeGLUT - required only by the two GLUT-based examples below, vendored
+  under vendor/freeglut and built from source as part of `./nob -examples`
+  on Linux, macOS, and Windows/MinGW. No system GLUT/FreeGLUT install is
+  needed, and macOS does not use its deprecated system GLUT.framework.
+  Linux still needs the system X11 development
     headers/libs (`sudo apt install xorg-dev mesa-common-dev` on
     Ubuntu/Debian, or the equivalent on other distros) - `./nob` checks
     for these before building the library itself.
@@ -46,9 +42,9 @@ API; no example requests GLFW_FULLSCREEN.
 
 Examples:
 
-- TwSimpleGLUT.c, TwDualGLUT.c (dual window; not built on Linux because
-  FreeGLUT does not render it correctly there), TwString.cpp (std::string /
-  C-dynamic-string demo) - GLUT-based.
+- TwSimpleGLUT.c and TwString.cpp (std::string / C-dynamic-string demo) -
+  FreeGLUT-based. TwDualGLUT.c is retained as source but is not included in
+  the examples build because its dual-window behavior is unreliable.
 - TwSimpleGLFW.c, TwAdvanced1.cpp (richest demo: enums, custom structs,
   groups) - GLFW2 + GLAD.
 - TwMultiCubesGLFW.c, TwQuadGLFW.c, TwStripGLFW.c, TwTriangleGLFW.c,

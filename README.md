@@ -46,13 +46,14 @@ Then:
   `lib/libAntTweakBar.dll` + `lib/libAntTweakBar.dll.a` (Windows/MinGW) —
   dynamic library
 
-`./nob -examples` compiles every example under `examples/` statically against
+`./nob -examples` compiles the supported examples listed in `nob.c` statically against
 `lib/libAntTweakBar.a` into `build/examples/`, and fails with a clear message
 if `lib/libAntTweakBar.a` doesn't exist yet (i.e. if `./nob` hasn't been run).
-GLFW2 and (on Linux/Windows) FreeGLUT are vendored under `vendor/` and built
+GLFW2 and FreeGLUT are vendored under `vendor/` and built
 from source as part of this step, so no external GLFW/GLUT install is
-needed; see [`examples/Readme.txt`](examples/Readme.txt) for details,
-including macOS's use of the system `GLUT.framework`.
+needed on Linux, macOS, or Windows; see
+[`examples/Readme.txt`](examples/Readme.txt) for details. The deprecated
+macOS system `GLUT.framework` is not used.
 
 Supported platforms: Linux, macOS, and Windows (MinGW).
 
