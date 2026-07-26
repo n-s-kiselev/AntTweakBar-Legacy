@@ -558,7 +558,7 @@ static bool build_freeglut(const char *nob_exe)
             // GL/gl.h (already required to build the library itself) instead.
             nob_cmd_append(&cmd, "-DFREEGLUT_NO_GL_INCLUDE");
 #if defined(__APPLE__)
-            nob_cmd_append(&cmd, "-DTARGET_HOST_MACOS_COCOA=1", "-include", "OpenGL/gl.h");
+            nob_cmd_append(&cmd, "-DNDEBUG", "-DTARGET_HOST_MACOS_COCOA=1", "-include", "OpenGL/gl.h");
 #else
             nob_cmd_append(&cmd, "-include", "GL/gl.h");
 #endif

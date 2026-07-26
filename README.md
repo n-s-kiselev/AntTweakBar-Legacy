@@ -22,6 +22,21 @@ backend.
 For AntTweakBar with GLFW v3 and the OpenGL Core Profile (OpenGL 3.0 and
 later), see [n-s-kiselev/AntTweakBarGLFW3](https://github.com/n-s-kiselev/AntTweakBarGLFW3).
 
+## macOS custom cursors
+
+AntTweakBar's original macOS cursor code packed each custom cursor into a
+2-bit grayscale/alpha bitmap. Modern AppKit accepts that bitmap object but
+interprets its representation as transparent, so the pointer disappears when
+AntTweakBar selects a custom point or rotation cursor. Because the faulty
+bitmap is created inside AntTweakBar, the symptom affects both GLFW and
+FreeGLUT applications.
+
+This version fixes the shared library code in `CTwMgr::PixmapCursor`: it
+converts AntTweakBar's existing 32×32 picture and mask data into an explicit
+32-bit RGBA `NSBitmapImageRep`, using the mask as the alpha channel, before
+constructing the `NSCursor`. macOS ports based on older AntTweakBar source
+should make the same conversion rather than reusing the packed 2-bit image.
+
 ## Building
 
 Bootstrap the build tool once, from the repository root:

@@ -6358,30 +6358,34 @@ void CTwMgr::SetCursor(CTwMgr::CCursor _Cursor)
 CTwMgr::CCursor CTwMgr::PixmapCursor(int _CurIdx)
 {
     unsigned char *data;
-    int x,y;
-    
-    NSBitmapImageRep *imgr = [[NSBitmapImageRep alloc] 
+    int x, y;
+    // Use an explicit RGBA representation. The previous packed two-bit
+    // grayscale/alpha bitmap is accepted by AppKit but is interpreted as
+    // fully transparent by current macOS releases.
+    NSBitmapImageRep *imgr = [[NSBitmapImageRep alloc]
                               initWithBitmapDataPlanes: NULL
                               pixelsWide: 32
                               pixelsHigh: 32
-                              bitsPerSample: 1
-                              samplesPerPixel: 2
+                              bitsPerSample: 8
+                              samplesPerPixel: 4
                               hasAlpha: YES
                               isPlanar: NO
-                              colorSpaceName: NSCalibratedWhiteColorSpace
+                              colorSpaceName: NSDeviceRGBColorSpace
                               bitmapFormat: NSAlphaNonpremultipliedBitmapFormat
-                              bytesPerRow: 8
-                              bitsPerPixel: 2
+                              bytesPerRow: 32*4
+                              bitsPerPixel: 32
                               ];
     data = [imgr bitmapData];
-    memset(data,0x0,32*8);
-    for (y=0;y<32;y++) {
-        for (x=0;x<32;x++) {
-            //printf("%d",g_CurMask[_CurIdx][x+y*32]);
-            data[(x>>2) + y*8] |= (unsigned char)(g_CurPict[_CurIdx][x+y*32] << 2*(3-(x&3))+1); //turn whiteon
-            data[(x>>2) + y*8] |= (unsigned char)(g_CurMask[_CurIdx][x+y*32] << 2*(3-(x&3))); //turn the alpha all the way up
+    for (y=0; y<32; ++y) {
+        for (x=0; x<32; ++x) {
+            const int src = x + y*32;
+            const int dst = 4*src;
+            const unsigned char shade = g_CurPict[_CurIdx][src] ? 255 : 0;
+            data[dst+0] = shade;
+            data[dst+1] = shade;
+            data[dst+2] = shade;
+            data[dst+3] = g_CurMask[_CurIdx][src] ? 255 : 0;
         }
-        //printf("\n");
     }
     NSImage *img = [[NSImage alloc] initWithSize: [imgr size]];
     [img addRepresentation: imgr];
@@ -6392,7 +6396,7 @@ CTwMgr::CCursor CTwMgr::PixmapCursor(int _CurIdx)
     if (cur)
         return cur;
     else
-        return [NSCursor arrowCursor];
+        return [[NSCursor arrowCursor] retain];
 }
 
 void CTwMgr::CreateCursors()
@@ -6416,10 +6420,10 @@ void CTwMgr::CreateCursors()
     m_CursorIBeam        = [[NSCursor IBeamCursor] retain];
     for (int i=0;i<NB_ROTO_CURSORS; i++)
     {
-        m_RotoCursors[i] = [PixmapCursor(i+2) retain];
+        m_RotoCursors[i] = PixmapCursor(i+2);
     }
-    m_CursorCenter  = [PixmapCursor(0) retain];
-    m_CursorPoint   = [PixmapCursor(1) retain];
+    m_CursorCenter  = PixmapCursor(0);
+    m_CursorPoint   = PixmapCursor(1);
     m_CursorsCreated = true;
 }
 
