@@ -72,10 +72,21 @@ static void mousePosCallback(GLFWwindow *window, double x, double y)
 // is what keeps the render target and AntTweakBar's own canvas in sync.
 static void framebufferSizeCallback(GLFWwindow *window, int fbWidth, int fbHeight)
 {
+    if (fbWidth == 0) fbWidth = 1;
     if (fbHeight == 0) fbHeight = 1;
     g_Width = fbWidth;
     g_Height = fbHeight;
     glViewport(0, 0, fbWidth, fbHeight);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    if (fbWidth >= fbHeight) {
+        double aspect = (double)fbWidth / fbHeight;
+        glOrtho(-aspect, aspect, -1.0, 1.0, -1.0, 1.0);
+    } else {
+        double aspect = (double)fbHeight / fbWidth;
+        glOrtho(-1.0, 1.0, -aspect, aspect, -1.0, 1.0);
+    }
+    glMatrixMode(GL_MODELVIEW);
     TwWindowSize(fbWidth, fbHeight);
 
     int winWidth = fbWidth, winHeight = fbHeight;
@@ -166,11 +177,9 @@ int main(void)
 
         float a = (float)g_Angle * (3.14159265358979f / 180.0f);
         float ca = cosf(a), sa = sinf(a);
-        float ratio = (float)g_Height / (float)g_Width;
-
         glBegin(GL_TRIANGLES);
         for (int i = 0; i < NB_VERTS; ++i) {
-            float x = g_Scale * (ca * g_Positions[i].X - sa * g_Positions[i].Y) * ratio;
+            float x = g_Scale * (ca * g_Positions[i].X - sa * g_Positions[i].Y);
             float y = g_Scale * (sa * g_Positions[i].X + ca * g_Positions[i].Y);
             glColor4fv(g_Colors[i]);
             glVertex2f(x, y);

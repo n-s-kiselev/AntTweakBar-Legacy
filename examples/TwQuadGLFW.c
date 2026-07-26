@@ -98,8 +98,19 @@ static void mousePosCallback(GLFWwindow *window, double x, double y)
 // is what keeps the render target and AntTweakBar's own canvas in sync.
 static void framebufferSizeCallback(GLFWwindow *window, int fbWidth, int fbHeight)
 {
+    if (fbWidth == 0) fbWidth = 1;
     if (fbHeight == 0) fbHeight = 1;
     glViewport(0, 0, fbWidth, fbHeight);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    if (fbWidth >= fbHeight) {
+        double aspect = (double)fbWidth / fbHeight;
+        glOrtho(-aspect, aspect, -1.0, 1.0, -1.0, 1.0);
+    } else {
+        double aspect = (double)fbHeight / fbWidth;
+        glOrtho(-1.0, 1.0, -aspect, aspect, -1.0, 1.0);
+    }
+    glMatrixMode(GL_MODELVIEW);
     TwWindowSize(fbWidth, fbHeight);
 
     int winWidth = fbWidth, winHeight = fbHeight;
