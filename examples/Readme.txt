@@ -36,6 +36,17 @@ This AntTweakBar build does not support the OpenGL Core Profile
 profile (TW_OPENGL) instead, via either immediate-mode or fixed-function-lit
 rendering.
 
+Known limitation - custom cursors on macOS with GLFW: AntTweakBar's cursor
+code predates GLFW3 and sets the cursor directly via the native platform API
+(NSCursor on macOS), bypassing the windowing toolkit's own cursor tracking.
+GLFW's Cocoa backend reasserts its own tracked cursor (the plain arrow, since
+these examples never call glfwSetCursor()) on every mouse move, so
+AntTweakBar's custom cursor icons (resize handles, etc.) never stay visible
+in the GLFW examples on macOS - only the plain system arrow shows. This does
+not affect the GLUT examples on macOS, or GLFW/GLUT on Linux (see
+docs/plans/vendor-glfw-freeglut.md for the Linux-side fix and the full
+root-cause analysis of both platforms).
+
 Examples:
 
 - TwSimpleGLUT.c, TwDualGLUT.c (dual window), TwString.cpp (std::string /

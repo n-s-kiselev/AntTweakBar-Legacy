@@ -2083,8 +2083,20 @@ int ANT_CALL TwDraw()
     #elif defined(ANT_UNIX)
         if( !g_TwMgr->m_CurrentXDisplay )
             g_TwMgr->m_CurrentXDisplay = glXGetCurrentDisplay();
-        if( !g_TwMgr->m_CurrentXWindow )
-            g_TwMgr->m_CurrentXWindow = glXGetCurrentDrawable();
+        if( !g_TwMgr->m_CurrentXWindow && g_TwMgr->m_CurrentXDisplay )
+        {
+            // Not glXGetCurrentDrawable(): with some windowing toolkits
+            // (e.g. GLFW, unlike GLUT) the GL context is bound to a
+            // GLXWindow created via glXCreateWindow(), a distinct X
+            // resource from the real Window that XDefineCursor() and
+            // XCreatePixmapCursor() need - using it directly causes
+            // BadWindow/BadCursor errors and cursors never render. The
+            // window with input focus is the real one.
+            Window focus; int revertTo;
+            XGetInputFocus(g_TwMgr->m_CurrentXDisplay, &focus, &revertTo);
+            if( focus!=None && focus!=PointerRoot )
+                g_TwMgr->m_CurrentXWindow = focus;
+        }
         if( g_TwMgr->m_CurrentXDisplay && !g_TwMgr->m_CursorsCreated )
             g_TwMgr->CreateCursors();
     #endif
@@ -6579,7 +6591,17 @@ void CTwMgr::SetCursor(CTwMgr::CCursor _Cursor)
         Display *dpy = glXGetCurrentDisplay();
         if( dpy==g_TwMgr->m_CurrentXDisplay )
         {
-            Window wnd = glXGetCurrentDrawable();
+            // See the matching comment in TwDraw(): use the window with
+            // input focus, not glXGetCurrentDrawable() (a GLXWindow under
+            // some toolkits, not the real Window XDefineCursor() needs).
+            Window wnd; int revertTo;
+            XGetInputFocus(dpy, &wnd, &revertTo);
+            if( (wnd==None || wnd==PointerRoot) )
+            {
+                // no reliable window right now; keep the previous one and
+                // try to set the cursor on it anyway
+                wnd = g_TwMgr->m_CurrentXWindow;
+            }
             if( wnd!=g_TwMgr->m_CurrentXWindow )
             {
                 FreeCursors();
