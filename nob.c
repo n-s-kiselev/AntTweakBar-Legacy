@@ -633,9 +633,18 @@ static bool build_example(const Example *example, const char *nob_exe)
         nob_cmd_append(&cmd, "-D_MACOSX");
 #else
         nob_cmd_append(&cmd, "-I" FREEGLUT_INCLUDE);
-        // See the matching comment in build_freeglut(): these examples
-        // never call GLU, so skip freeglut_std.h's GL/glu.h include.
-        nob_cmd_append(&cmd, "-DFREEGLUT_NO_GL_INCLUDE", "-include", "GL/gl.h");
+        // None of these examples call GLU, so skip freeglut_std.h's
+        // GL/glu.h include (see the matching comment in build_freeglut()).
+        nob_cmd_append(&cmd, "-DFREEGLUT_NO_GL_INCLUDE");
+        // TwSimpleGLUT.c/TwDualGLUT.c already #include <glad/glad.h> (and
+        // call gladLoadGL()) before their GLUT header, which fully replaces
+        // GL/gl.h and pre-empts its include guard - forcing GL/gl.h here too
+        // would make glad.h see the system header "already included" and
+        // error out. TwString.cpp has no glad.h of its own, so it still
+        // needs GL/gl.h's declarations restored some other way.
+        if (strcmp(example->source, EXAMPLES_FOLDER "TwString.cpp") == 0) {
+            nob_cmd_append(&cmd, "-include", "GL/gl.h");
+        }
 #if defined(_WIN32)
         nob_cmd_append(&cmd, "-DFREEGLUT_STATIC");
 #endif
