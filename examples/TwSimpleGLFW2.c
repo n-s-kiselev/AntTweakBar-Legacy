@@ -72,30 +72,34 @@ static void ManualLookAt(double eyeX, double eyeY, double eyeZ,
 // allocated at the native pixel resolution (2x points on a typical Retina
 // display) - passing the point-based size straight to glViewport()/
 // TwWindowSize() then only fills a quarter of the real window. g_ScaleX/Y
-// convert points to pixels; computed once (see WindowSizeCB()) by comparing
-// OpenGL's own default viewport - which already reflects the real pixel
-// size - against the point-based width/height GLFW2 reports. On Linux/
-// Windows, where GLFW2 already reports pixels directly, this naturally
-// comes out as 1.0, so no platform-specific code is needed.
+// convert points to pixels; computed once in main() (see ComputeHiDPIScale()
+// below) by comparing OpenGL's own default viewport - which already
+// reflects the real pixel size - against the point-based window size GLFW2
+// reports. On Linux/Windows, where GLFW2 already reports pixels directly,
+// this naturally comes out as 1.0, so no platform-specific code is needed.
 static double g_ScaleX = 1.0, g_ScaleY = 1.0;
-static int g_ScaleInitialized = 0;
+
+// Must be called once right after glfwOpenWindow(), before this example's
+// own glViewport() call ever runs (so OpenGL's default viewport still
+// reflects the real framebuffer) and before TwInit() (so AntTweakBar's
+// "fontscaling" - see main() - is set before it builds any widget).
+static void ComputeHiDPIScale(void)
+{
+    int width = 1, height = 1;
+    glfwGetWindowSize(&width, &height);
+    GLint vp[4];
+    glGetIntegerv(GL_VIEWPORT, vp);
+    if( width > 0 && height > 0 && vp[2] > 0 && vp[3] > 0 )
+    {
+        g_ScaleX = (double)vp[2] / width;
+        g_ScaleY = (double)vp[3] / height;
+    }
+}
 
 
 // Callback function called by GLFW when window size changes
 void GLFWCALL WindowSizeCB(int width, int height)
 {
-    if( !g_ScaleInitialized )
-    {
-        GLint vp[4];
-        glGetIntegerv(GL_VIEWPORT, vp);
-        if( width > 0 && height > 0 && vp[2] > 0 && vp[3] > 0 )
-        {
-            g_ScaleX = (double)vp[2] / width;
-            g_ScaleY = (double)vp[3] / height;
-        }
-        g_ScaleInitialized = 1;
-    }
-
     int pixelWidth  = (int)(width*g_ScaleX + 0.5);
     int pixelHeight = (int)(height*g_ScaleY + 0.5);
 
@@ -209,6 +213,26 @@ int main()
     glfwEnable(GLFW_MOUSE_CURSOR);
     glfwEnable(GLFW_KEY_REPEAT);
     glfwSetWindowTitle("AntTweakBar simple example using GLFW2");
+
+    ComputeHiDPIScale();
+
+    // AntTweakBar draws every widget (buttons, sliders, panel, swatches) at a
+    // fixed number of pixels with no DPI awareness, so on a HiDPI/Retina
+    // display (where those pixels are physically smaller) the whole bar looks
+    // too small compared to a standard display. AntTweakBar's own
+    // "fontscaling" global parameter (must be set via TwDefine before
+    // TwInit) scales the font metrics that ALL of its widget-layout math
+    // derives from (row height, button/slider size, panel size, ...), so
+    // scaling it by g_ScaleX (see ComputeHiDPIScale() above - GLFW2 has no
+    // glfwGetWindowContentScale() equivalent, unlike GLFW3) makes the whole
+    // bar render at a comparable physical size to a standard display,
+    // without touching any library source. On a standard (non-HiDPI)
+    // display g_ScaleX is 1.0, so this is a no-op there.
+    {
+        char fontScalingDef[64];
+        snprintf(fontScalingDef, sizeof(fontScalingDef), "GLOBAL fontscaling=%g", g_ScaleX);
+        TwDefine(fontScalingDef);
+    }
 
     // Initialize AntTweakBar
     TwInit(TW_OPENGL, NULL);
