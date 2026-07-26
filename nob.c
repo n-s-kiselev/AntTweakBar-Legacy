@@ -524,6 +524,11 @@ static bool build_glfw2(const char *nob_exe)
 
     Nob_Cmd cmd = {0};
     nob_cmd_append(&cmd, "cc", "-O2", "-I" GLFW2_INCLUDE, "-I" "vendor/glfw2/lib");
+    // GLFW2's own internal headers transitively #include <GL/glfw.h> (e.g.
+    // via platform.h), which by default pulls in GL/glu.h too - not
+    // guaranteed to be installed, and GLFW2's library code never calls any
+    // GLU function (confirmed by grep), so skip it.
+    nob_cmd_append(&cmd, "-DGLFW_NO_GLU");
 #if defined(_WIN32)
     nob_cmd_append(&cmd, "-D_GLFW2_WIN32", "-I" "vendor/glfw2/lib/win32");
 #elif defined(__APPLE__)
@@ -646,16 +651,17 @@ static void append_glfw2_flags(Nob_Cmd *cmd)
 static void append_glfw2_libs(Nob_Cmd *cmd)
 {
     nob_cmd_append(cmd, GLFW2_OBJ);
+    // No -lGLU/-lglu32: TwSimpleGLFW2.c defines GLFW_NO_GLU and replaces
+    // gluPerspective()/gluLookAt() with manual matrix math (see
+    // ManualLookAt() in TwSimpleGLFW2.c), same reasoning as the FreeGLUT
+    // examples not needing it.
 #if defined(_WIN32)
-    nob_cmd_append(cmd, "-lopengl32", "-lglu32", "-lgdi32");
+    nob_cmd_append(cmd, "-lopengl32", "-lgdi32");
 #elif defined(__APPLE__)
-    // TwSimpleGLFW2.c calls gluPerspective()/gluLookAt() directly (unlike
-    // the FreeGLUT examples, this one is a real GLU user) - OpenGL.framework
-    // already provides GLU, no separate link needed.
     nob_cmd_append(cmd, "-framework", "Cocoa", "-framework", "IOKit", "-framework", "CoreVideo",
                         "-framework", "OpenGL");
 #else
-    nob_cmd_append(cmd, "-lGL", "-lGLU", "-lX11", "-lXrandr", "-lm", "-lpthread");
+    nob_cmd_append(cmd, "-lGL", "-lX11", "-lXrandr", "-lm", "-lpthread");
 #endif
 }
 

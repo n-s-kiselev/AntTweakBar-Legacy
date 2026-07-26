@@ -22,10 +22,49 @@
 //
 //  ---------------------------------------------------------------------------
 
+// GLFW_NO_GLU: this example never calls a GLU function (see ManualLookAt()
+// below, which replaces the original gluLookAt()/gluPerspective() calls) -
+// avoids requiring GL/glu.h, which isn't guaranteed to be installed
+// (matching how the FreeGLUT examples already avoid the same dependency;
+// see FREEGLUT_NO_GL_INCLUDE in nob.c).
+#define GLFW_NO_GLU
 #include <AntTweakBar.h>
 #include <GL/glfw.h>
 
+#include <math.h>
 #include <stdio.h>
+
+
+// Manual replacement for gluLookAt(), so this example doesn't need GLU.
+static void ManualLookAt(double eyeX, double eyeY, double eyeZ,
+                          double centerX, double centerY, double centerZ,
+                          double upX, double upY, double upZ)
+{
+    double fx = centerX - eyeX, fy = centerY - eyeY, fz = centerZ - eyeZ;
+    double flen = sqrt(fx*fx + fy*fy + fz*fz);
+    fx /= flen; fy /= flen; fz /= flen;
+
+    // side = forward x up
+    double sx = fy*upZ - fz*upY;
+    double sy = fz*upX - fx*upZ;
+    double sz = fx*upY - fy*upX;
+    double slen = sqrt(sx*sx + sy*sy + sz*sz);
+    sx /= slen; sy /= slen; sz /= slen;
+
+    // recompute up = side x forward, so the basis is orthonormal
+    double ux = sy*fz - sz*fy;
+    double uy = sz*fx - sx*fz;
+    double uz = sx*fy - sy*fx;
+
+    GLfloat m[16] = {
+        (GLfloat)sx, (GLfloat)ux, (GLfloat)(-fx), 0.0f,
+        (GLfloat)sy, (GLfloat)uy, (GLfloat)(-fy), 0.0f,
+        (GLfloat)sz, (GLfloat)uz, (GLfloat)(-fz), 0.0f,
+        0.0f,        0.0f,        0.0f,           1.0f
+    };
+    glMultMatrixf(m);
+    glTranslated(-eyeX, -eyeY, -eyeZ);
+}
 
 
 // Callback function called by GLFW when window size changes
@@ -35,8 +74,14 @@ void GLFWCALL WindowSizeCB(int width, int height)
     glViewport(0, 0, width, height);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(40, (double)width/height, 1, 10);
-    gluLookAt(-1,0,3, 0,0,0, 0,1,0);
+    // Manual implementation of gluPerspective(40, (double)width/height, 1, 10)
+    {
+        double znear = 1, zfar = 10, fovy = 40;
+        double top = znear * tan(fovy * (3.14159265358979323846/360.0));
+        double aspect = (double)width/height;
+        glFrustum(-top*aspect, top*aspect, -top, top, znear, zfar);
+    }
+    ManualLookAt(-1,0,3, 0,0,0, 0,1,0);
 
     // Send the new window size to AntTweakBar
     TwWindowSize(width, height);
