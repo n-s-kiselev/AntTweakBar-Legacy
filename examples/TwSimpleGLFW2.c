@@ -67,24 +67,61 @@ static void ManualLookAt(double eyeX, double eyeY, double eyeZ,
 }
 
 
+// GLFW2 predates HiDPI/Retina awareness: on such displays it reports window
+// size and mouse position in points, while the actual OpenGL framebuffer is
+// allocated at the native pixel resolution (2x points on a typical Retina
+// display) - passing the point-based size straight to glViewport()/
+// TwWindowSize() then only fills a quarter of the real window. g_ScaleX/Y
+// convert points to pixels; computed once (see WindowSizeCB()) by comparing
+// OpenGL's own default viewport - which already reflects the real pixel
+// size - against the point-based width/height GLFW2 reports. On Linux/
+// Windows, where GLFW2 already reports pixels directly, this naturally
+// comes out as 1.0, so no platform-specific code is needed.
+static double g_ScaleX = 1.0, g_ScaleY = 1.0;
+static int g_ScaleInitialized = 0;
+
+
 // Callback function called by GLFW when window size changes
 void GLFWCALL WindowSizeCB(int width, int height)
 {
+    if( !g_ScaleInitialized )
+    {
+        GLint vp[4];
+        glGetIntegerv(GL_VIEWPORT, vp);
+        if( width > 0 && height > 0 && vp[2] > 0 && vp[3] > 0 )
+        {
+            g_ScaleX = (double)vp[2] / width;
+            g_ScaleY = (double)vp[3] / height;
+        }
+        g_ScaleInitialized = 1;
+    }
+
+    int pixelWidth  = (int)(width*g_ScaleX + 0.5);
+    int pixelHeight = (int)(height*g_ScaleY + 0.5);
+
     // Set OpenGL viewport and camera
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, pixelWidth, pixelHeight);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     // Manual implementation of gluPerspective(40, (double)width/height, 1, 10)
     {
         double znear = 1, zfar = 10, fovy = 40;
         double top = znear * tan(fovy * (3.14159265358979323846/360.0));
-        double aspect = (double)width/height;
+        double aspect = (double)pixelWidth/pixelHeight;
         glFrustum(-top*aspect, top*aspect, -top, top, znear, zfar);
     }
     ManualLookAt(-1,0,3, 0,0,0, 0,1,0);
 
-    // Send the new window size to AntTweakBar
-    TwWindowSize(width, height);
+    // Send the new window size (in pixels) to AntTweakBar
+    TwWindowSize(pixelWidth, pixelHeight);
+}
+
+
+// Callback function called by GLFW on mouse motion; scales the point-based
+// position GLFW2 reports into the same pixel space as TwWindowSize() above.
+void GLFWCALL MousePosCB(int x, int y)
+{
+    TwEventMousePosGLFW((int)(x*g_ScaleX), (int)(y*g_ScaleY));
 }
 
 
@@ -204,7 +241,7 @@ int main()
     // - Directly redirect GLFW mouse button events to AntTweakBar
     glfwSetMouseButtonCallback((GLFWmousebuttonfun)TwEventMouseButtonGLFW);
     // - Directly redirect GLFW mouse position events to AntTweakBar
-    glfwSetMousePosCallback((GLFWmouseposfun)TwEventMousePosGLFW);
+    glfwSetMousePosCallback(MousePosCB);
     // - Directly redirect GLFW mouse wheel events to AntTweakBar
     glfwSetMouseWheelCallback((GLFWmousewheelfun)TwEventMouseWheelGLFW);
     // - Directly redirect GLFW key events to AntTweakBar
