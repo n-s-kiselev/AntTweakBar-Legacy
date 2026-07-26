@@ -326,7 +326,7 @@ static void InitRenderStates()
     glEnable(GL_LIGHT0);
     glEnable(GL_NORMALIZE);
     glEnable(GL_COLOR_MATERIAL);
-    glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
+    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
 
     // Mimic the original shader's "(1-lightCoeff) + lightCoeff*NdotL" mix
     // (lightCoeff=0.85) with fixed-function lighting: a small constant
@@ -408,10 +408,12 @@ static void Render()
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    // Move the world away from the camera (camPosInv is -cameraPosition, same as the original)
+    // The original Direct3D projection is left-handed and looks toward +Z.
+    // OpenGL's compatibility projection looks toward -Z, so preserve the
+    // original horizontal offset but reverse its depth translation.
     float dist = g_CamDistance + 0.4f;
     Vector3 camPosInv = { dist * 0.3f, dist * 0.0f, dist * 2.0f };
-    glTranslatef(camPosInv.v[0], camPosInv.v[1], camPosInv.v[2]);
+    glTranslatef(camPosInv.v[0], camPosInv.v[1], -camPosInv.v[2]);
 
     // Light direction is fixed in view space (doesn't rotate with the sponge),
     // so it's set before applying the sponge's own rotation below.

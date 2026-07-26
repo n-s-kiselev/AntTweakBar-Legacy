@@ -29,8 +29,8 @@ install.
 
 This AntTweakBar build does not support the OpenGL Core Profile
 (TW_OPENGL_CORE crashes) - every example uses the OpenGL compatibility
-profile (TW_OPENGL) instead, via either immediate-mode or fixed-function-lit
-rendering.
+profile (TW_OPENGL) instead, via either immediate-mode or fixed-function
+rendering with legacy OpenGL lighting.
 
 AntTweakBar's cursor and event integration was originally written for GLFW2,
 so every GLFW example uses the local GLFW2 build. A small TwGLFW2.h adapter

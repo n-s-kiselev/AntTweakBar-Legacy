@@ -13,6 +13,22 @@ build script instead of the original per-platform Makefiles/Visual Studio
 project. Only the OpenGL backend is targeted (Direct3D9/10/11 and the OpenGL
 Core Profile are not supported by this build).
 
+## Changes from the upstream development version
+
+Compared with the development version published on the
+[official AntTweakBar website](https://anttweakbar.sourceforge.io/doc/), this
+repository:
+
+- corrects a few small typos inherited from the upstream source and
+  documentation;
+- replaces the original platform-specific build files with the single
+  cross-platform `nob.c` build;
+- builds the supported examples from vendored GLFW2, FreeGLUT, and GLAD
+  sources;
+- fixes the AntTweakBar library's custom cursor creation on modern macOS; and
+- includes cross-platform example and integration fixes, including HiDPI
+  sizing, resizing, and safe FreeGLUT shutdown.
+
 ## GLFW and OpenGL compatibility
 
 The examples in this repository are compiled with the vendored GLFW v2
@@ -24,18 +40,19 @@ later), see [n-s-kiselev/AntTweakBarGLFW3](https://github.com/n-s-kiselev/AntTwe
 
 ## macOS custom cursors
 
-AntTweakBar's original macOS cursor code packed each custom cursor into a
-2-bit grayscale/alpha bitmap. Modern AppKit accepts that bitmap object but
-interprets its representation as transparent, so the pointer disappears when
-AntTweakBar selects a custom point or rotation cursor. Because the faulty
-bitmap is created inside AntTweakBar, the symptom affects both GLFW and
-FreeGLUT applications.
+AntTweakBar stores its custom 32×32 cursor shapes as data in the library's
+source code. The original macOS code used this data to create a compact 2-bit
+image, which modern macOS versions display as fully transparent. As a result,
+the pointer disappeared whenever AntTweakBar selected a custom cursor. The
+problem affected both GLFW and FreeGLUT applications because the faulty image
+was created by AntTweakBar itself.
 
-This version fixes the shared library code in `CTwMgr::PixmapCursor`: it
-converts AntTweakBar's existing 32×32 picture and mask data into an explicit
-32-bit RGBA `NSBitmapImageRep`, using the mask as the alpha channel, before
-constructing the `NSCursor`. macOS ports based on older AntTweakBar source
-should make the same conversion rather than reusing the packed 2-bit image.
+This repository fixes the source code in `CTwMgr::PixmapCursor`. While an
+application is running, the function now creates a standard 32-bit RGBA image
+in memory from the built-in cursor shape and passes that image to macOS. The
+cursor mask supplies the transparent and opaque areas. This is a library code
+fix; it does not generate, modify, or post-process any bitmap files during the
+build.
 
 ## Building
 
