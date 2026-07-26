@@ -623,7 +623,15 @@ static bool build_example(const Example *example, const char *nob_exe)
     }
 
     Nob_Cmd cmd = {0};
-    nob_cmd_append(&cmd, compiler_for_source(example->source));
+    // Always use the C++ driver here (regardless of the example's own
+    // source extension): this step both compiles and links against
+    // lib/libAntTweakBar.a, which always contains C++ object code (TwBar.cpp,
+    // TwMgr.cpp, etc.), so the link needs libstdc++ pulled in automatically -
+    // matching link_shared_library()'s own unconditional "c++" choice for the
+    // same reason. Using "cc" here (as compiler_for_source() would for a
+    // plain .c example) leaves operator new/delete, RTTI, and exception
+    // symbols undefined on Linux.
+    nob_cmd_append(&cmd, "c++");
     nob_cmd_append(&cmd, "-Wall", "-O2", "-DTW_STATIC", "-I" INCLUDE_FOLDER, "-I" GLAD_INCLUDE);
 
     if (example->kind == EXAMPLE_GLUT) {
