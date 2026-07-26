@@ -63,7 +63,8 @@ request GLFW_FULLSCREEN, so this doesn't affect them).
 
 Examples:
 
-- TwSimpleGLUT.c, TwDualGLUT.c (dual window), TwString.cpp (std::string /
+- TwSimpleGLUT.c, TwDualGLUT.c (dual window; not built on Linux because
+  FreeGLUT does not render it correctly there), TwString.cpp (std::string /
   C-dynamic-string demo) - GLUT-based.
 - TwSimpleGLFW.c, TwAdvanced1.cpp (richest demo: enums, custom structs,
   groups) - GLFW3 + GLAD.

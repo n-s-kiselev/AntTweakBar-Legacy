@@ -74,7 +74,9 @@ typedef struct {
 // examples (see docs/plans/examples-glfw-port.md).
 static const Example examples[] = {
     { EXAMPLES_FOLDER "TwSimpleGLUT.c",     EXAMPLE_GLUT },
+#if !defined(__linux__)
     { EXAMPLES_FOLDER "TwDualGLUT.c",       EXAMPLE_GLUT },
+#endif
     { EXAMPLES_FOLDER "TwString.cpp",       EXAMPLE_GLUT },
     { EXAMPLES_FOLDER "TwSimpleGLFW.c",     EXAMPLE_GLFW },
     { EXAMPLES_FOLDER "TwAdvanced1.cpp",    EXAMPLE_GLFW },
