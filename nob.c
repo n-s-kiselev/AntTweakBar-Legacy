@@ -42,6 +42,16 @@
 #define FREEGLUT_BUILD_FOLDER EXAMPLES_BUILD_FOLDER "freeglut/"
 #define FREEGLUT_LIB          EXAMPLES_BUILD_FOLDER "libfreeglut.a"
 
+// GLFW2 is vendored alongside GLFW3 (not instead of it) as an experiment:
+// AntTweakBar's cursor code and TwEventGLFW.c helper were written against
+// GLFW2, and custom cursors don't render correctly under GLFW3 on macOS
+// (see docs/plans/glfw-cursor-rendering-fix.md). TwSimpleGLFW2.c exists to
+// verify whether GLFW2 doesn't have that problem, before deciding whether
+// to keep GLFW2, GLFW3, or both going forward.
+#define GLFW2_INCLUDE         "vendor/glfw2/include/"
+#define GLFW2_SRC             "vendor/glfw2/glfw2_unity.c"
+#define GLFW2_OBJ             EXAMPLES_BUILD_FOLDER "glfw2.o"
+
 #if defined(_WIN32)
 #define EXE_EXT ".exe"
 #else
@@ -49,8 +59,9 @@
 #endif
 
 typedef enum {
-    EXAMPLE_GLUT, // links against GLUT/freeglut
-    EXAMPLE_GLFW, // links against GLFW3 + GLAD
+    EXAMPLE_GLUT,  // links against GLUT/freeglut
+    EXAMPLE_GLFW,  // links against GLFW3 + GLAD
+    EXAMPLE_GLFW2, // links against GLFW2 (see GLFW2_SRC's comment above)
 } Example_Kind;
 
 typedef struct {
@@ -73,6 +84,7 @@ static const Example examples[] = {
     { EXAMPLES_FOLDER "TwTriangleGLFW.c",   EXAMPLE_GLFW },
     { EXAMPLES_FOLDER "TwSpongeGLFW.cpp",   EXAMPLE_GLFW },
     { EXAMPLES_FOLDER "TwParticlesGLFW.c",  EXAMPLE_GLFW },
+    { EXAMPLES_FOLDER "TwSimpleGLFW2.c",    EXAMPLE_GLFW2 },
 };
 
 // Vendored FreeGLUT sources (Linux/Windows only - see build_freeglut()).
@@ -499,6 +511,33 @@ static bool build_glfw(const char *nob_exe)
     return nob_cmd_run(&cmd);
 }
 
+// Compiles the vendored GLFW2 unity build (vendor/glfw2/glfw2_unity.c),
+// same pattern as build_glfw(). See GLFW2_SRC's comment for why this exists
+// alongside (not instead of) GLFW3.
+static bool build_glfw2(const char *nob_exe)
+{
+    const char *inputs[] = { GLFW2_SRC, "nob.c", nob_exe, NOB_HEADER };
+    if (!build_needed(GLFW2_OBJ, inputs, NOB_ARRAY_LEN(inputs))) {
+        nob_log(NOB_INFO, "%s is up to date", GLFW2_OBJ);
+        return true;
+    }
+
+    Nob_Cmd cmd = {0};
+    nob_cmd_append(&cmd, "cc", "-O2", "-I" GLFW2_INCLUDE, "-I" "vendor/glfw2/lib");
+#if defined(_WIN32)
+    nob_cmd_append(&cmd, "-D_GLFW2_WIN32", "-I" "vendor/glfw2/lib/win32");
+#elif defined(__APPLE__)
+    // glfw2_unity.c #includes Objective-C (.m) sources under _GLFW2_COCOA.
+    nob_cmd_append(&cmd, "-D_GLFW2_COCOA", "-I" "vendor/glfw2/lib/cocoa", "-x", "objective-c");
+#else
+    nob_cmd_append(&cmd, "-D_GLFW2_X11", "-I" "vendor/glfw2/lib/x11",
+                        "-D_GLFW_HAS_XRANDR", "-D_GLFW_HAS_PTHREAD", "-D_GLFW_HAS_SCHED_YIELD",
+                        "-D_GLFW_HAS_GLXGETPROCADDRESS", "-D_GLFW_HAS_SYSCONF", "-D_GLFW_USE_LINUX_JOYSTICKS");
+#endif
+    nob_cmd_append(&cmd, "-c", GLFW2_SRC, "-o", GLFW2_OBJ);
+    return nob_cmd_run(&cmd);
+}
+
 #if !defined(__APPLE__)
 // Compiles the vendored FreeGLUT sources (see freeglut_core_sources /
 // freeglut_platform_sources) into build/examples/freeglut/*.o and archives
@@ -599,6 +638,27 @@ static void append_glfw_libs(Nob_Cmd *cmd)
 #endif
 }
 
+static void append_glfw2_flags(Nob_Cmd *cmd)
+{
+    nob_cmd_append(cmd, "-I" GLFW2_INCLUDE);
+}
+
+static void append_glfw2_libs(Nob_Cmd *cmd)
+{
+    nob_cmd_append(cmd, GLFW2_OBJ);
+#if defined(_WIN32)
+    nob_cmd_append(cmd, "-lopengl32", "-lglu32", "-lgdi32");
+#elif defined(__APPLE__)
+    // TwSimpleGLFW2.c calls gluPerspective()/gluLookAt() directly (unlike
+    // the FreeGLUT examples, this one is a real GLU user) - OpenGL.framework
+    // already provides GLU, no separate link needed.
+    nob_cmd_append(cmd, "-framework", "Cocoa", "-framework", "IOKit", "-framework", "CoreVideo",
+                        "-framework", "OpenGL");
+#else
+    nob_cmd_append(cmd, "-lGL", "-lGLU", "-lX11", "-lXrandr", "-lm", "-lpthread");
+#endif
+}
+
 static bool build_example(const Example *example, const char *nob_exe)
 {
     const char *output = example_executable_path(example->source);
@@ -609,6 +669,8 @@ static bool build_example(const Example *example, const char *nob_exe)
     nob_da_append(&inputs, GLAD_OBJ);
     if (example->kind == EXAMPLE_GLFW) {
         nob_da_append(&inputs, GLFW_OBJ);
+    } else if (example->kind == EXAMPLE_GLFW2) {
+        nob_da_append(&inputs, GLFW2_OBJ);
     }
 #if !defined(__APPLE__)
     else {
@@ -657,6 +719,8 @@ static bool build_example(const Example *example, const char *nob_exe)
         nob_cmd_append(&cmd, "-DFREEGLUT_STATIC");
 #endif
 #endif
+    } else if (example->kind == EXAMPLE_GLFW2) {
+        append_glfw2_flags(&cmd);
     } else {
         append_glfw_flags(&cmd);
     }
@@ -666,6 +730,8 @@ static bool build_example(const Example *example, const char *nob_exe)
 
     if (example->kind == EXAMPLE_GLUT) {
         append_glut_flags(&cmd);
+    } else if (example->kind == EXAMPLE_GLFW2) {
+        append_glfw2_libs(&cmd);
     } else {
         append_glfw_libs(&cmd);
     }
@@ -686,6 +752,7 @@ static bool build_examples(const char *nob_exe)
     if (!nob_mkdir_if_not_exists(EXAMPLES_BUILD_FOLDER)) return false;
     if (!build_glad(nob_exe)) return false;
     if (!build_glfw(nob_exe)) return false;
+    if (!build_glfw2(nob_exe)) return false;
 #if !defined(__APPLE__)
     if (!build_freeglut(nob_exe)) return false;
 #endif
