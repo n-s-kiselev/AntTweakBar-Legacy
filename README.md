@@ -13,6 +13,15 @@ build script instead of the original per-platform Makefiles/Visual Studio
 project. Only the OpenGL backend is targeted (Direct3D9/10/11 and the OpenGL
 Core Profile are not supported by this build).
 
+## GLFW and OpenGL compatibility
+
+The examples in this repository are compiled with the vendored GLFW v2
+implementation and use AntTweakBar's legacy OpenGL compatibility-profile
+backend.
+
+For AntTweakBar with GLFW v3 and the OpenGL Core Profile (OpenGL 3.0 and
+later), see [n-s-kiselev/AntTweakBarGLFW3](https://github.com/n-s-kiselev/AntTweakBarGLFW3).
+
 ## Building
 
 Bootstrap the build tool once, from the repository root:
