@@ -19,7 +19,9 @@
 //  MiniGLUT.h is provided to avoid the need of having GLUT installed to 
 //  recompile this example. Do not use it in your own programs, better
 //  install and use the actual GLUT library SDK.
-#   define USE_MINI_GLUT
+#   ifdef FORCE_MINI_GLUT
+#       define USE_MINI_GLUT
+#   endif
 #endif
 
 #if defined(USE_MINI_GLUT)
@@ -28,7 +30,7 @@
     #define GL_SILENCE_DEPRECATION
     #include <GLUT/glut.h>
 #else
-    #include <GL/glut.h>
+    #include <GL/freeglut.h>
 #endif
 
 #include <sstream>
@@ -239,7 +241,7 @@ void OnReshape(int width, int height)
     TwWindowSize(width, height);
 }
 
-// Function called at exit
+// Function called before FreeGLUT destroys the window and OpenGL context
 void OnTerminate(void)
 { 
     // terminate AntTweakBar
@@ -292,7 +294,11 @@ int main(int argc, char *argv[])
     // Set GLUT callbacks
     glutDisplayFunc(OnDisplay);
     glutReshapeFunc(OnReshape);
-    atexit(OnTerminate);  // Called after glutMainLoop ends
+#if defined(FREEGLUT)
+    glutCloseFunc(OnTerminate);
+#else
+    atexit(OnTerminate);
+#endif
 
     // Initialize AntTweakBar
     TwInit(TW_OPENGL, NULL);

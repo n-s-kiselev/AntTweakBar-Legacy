@@ -227,7 +227,7 @@ void Reshape(int width, int height)
 }
 
 
-// Function called at exit
+// Function called before FreeGLUT destroys the window and OpenGL context
 void Terminate(void)
 { 
     glDeleteLists(SHAPE_TEAPOT, NUM_SHAPES);
@@ -291,7 +291,7 @@ int main(int argc, char *argv[])
     // Set GLUT callbacks
     glutDisplayFunc(Display);
     glutReshapeFunc(Reshape);
-    atexit(Terminate);  // Called after glutMainLoop ends
+    glutCloseFunc(Terminate);
 
     // Initialize AntTweakBar
     TwInit(TW_OPENGL, NULL);
