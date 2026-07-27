@@ -139,7 +139,12 @@ int main(void)
     }
     glfwMakeContextCurrent(window);
 
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+    // Not gladLoadGLLoader(glfwGetProcAddress): GLFW2's own glfwGetProcAddress
+    // (unlike GLFW3's) is a thin wglGetProcAddress() wrapper with no fallback
+    // to GetProcAddress() on opengl32.dll, so it fails to resolve OpenGL 1.1
+    // core functions on Windows. gladLoadGL() is self-contained and already
+    // has that fallback built in (see get_proc() in vendor/glad/src/glad.c).
+    if (!gladLoadGL()) {
         fprintf(stderr, "Failed to initialize GLAD\n");
         return 1;
     }
