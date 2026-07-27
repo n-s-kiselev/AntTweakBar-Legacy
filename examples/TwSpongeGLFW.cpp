@@ -78,7 +78,7 @@ Quaternion g_SpongeRotation;                 // model rotation, set by InitScene
 int g_SpongeLevel = 2;                       // number of recursions
 bool g_SpongeAO = true;                      // apply ambient occlusion
 unsigned int g_SpongeIndicesCount = 0;       // set by BuildSponge
-Vector3 g_LightDir = {-0.5f, -0.2f, 1};      // light direction vector
+Vector3 g_LightDir = {-0.5f, -0.2f, 1};      // direction from the sponge to the light source
 float g_CamDistance = 0.7f;                  // camera distance
 float g_BackgroundColor[] = {0, 0, 0.5f, 1}; // background color
 bool g_Animate = true;                       // enable animation
@@ -416,9 +416,13 @@ static void Render()
     glTranslatef(camPosInv.v[0], camPosInv.v[1], -camPosInv.v[2]);
 
     // Light direction is fixed in view space (doesn't rotate with the sponge),
-    // so it's set before applying the sponge's own rotation below.
+    // so it's set before applying the sponge's own rotation below. g_LightDir
+    // is the direction TO the light source (matching GL_LIGHT0's own
+    // w=0 "direction to light" convention for GL_POSITION), so it's used
+    // directly here with no negation - unlike the original TwSimpleDX11.cpp
+    // shader, whose LightDir instead means "direction the light travels".
     Vector3 lightDirNorm = (1.0f / Length(g_LightDir)) * g_LightDir;
-    GLfloat lightPos[4] = { -lightDirNorm.v[0], -lightDirNorm.v[1], -lightDirNorm.v[2], 0.0f }; // directional light
+    GLfloat lightPos[4] = { lightDirNorm.v[0], lightDirNorm.v[1], lightDirNorm.v[2], 0.0f }; // directional light
     glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
 
     Vector3 axis = Vector3::ZERO;
@@ -577,7 +581,11 @@ int main(void)
     TwAddVarRW(bar, "Rotation", TW_TYPE_QUAT4F, &g_SpongeRotation, "opened=true axisz=-z group=Sponge");
     TwAddVarRW(bar, "Animation", TW_TYPE_BOOLCPP, &g_Animate, "group=Sponge key=a");
     TwAddVarRW(bar, "Animation speed", TW_TYPE_FLOAT, &g_AnimationSpeed, "min=-10 max=10 step=0.1 group=Sponge keyincr=+ keydecr=-");
-    TwAddVarRW(bar, "Light direction", TW_TYPE_DIR3F, &g_LightDir, "opened=true axisz=-z showval=false");
+    // No axisz=-z here (unlike "Rotation" above): g_LightDir is fed straight
+    // to glLightfv with no negation (see Render()), so leaving this widget's
+    // axes unpermuted makes its arrow a literal view of that same vector -
+    // it always points exactly toward the light source.
+    TwAddVarRW(bar, "Light direction", TW_TYPE_DIR3F, &g_LightDir, "opened=true showval=false");
     TwAddVarRW(bar, "Camera distance", TW_TYPE_FLOAT, &g_CamDistance, "min=0 max=4 step=0.01 keyincr=PGUP keydecr=PGDOWN");
     TwAddVarRW(bar, "Background", TW_TYPE_COLOR4F, &g_BackgroundColor, "colormode=hls");
 
