@@ -321,6 +321,18 @@ static void append_platform_defines(Nob_Cmd *cmd)
 {
 #if defined(_WIN32)
     nob_cmd_append(cmd, "-D_WINDOWS");
+    // TwMgr.cpp's CreateCursors() calls MAKEINTRESOURCE() on values like
+    // IDC_ARROW, which MinGW-w64's own <winuser.h> already defines via
+    // MAKEINTRESOURCE (i.e. as a pointer, not a raw integer id) - so this is
+    // MAKEINTRESOURCE applied twice. That's always been a redundant no-op at
+    // runtime (the "fake pointer" round-trips through the WORD truncation
+    // unchanged), but recent MinGW-w64 GCC (confirmed with 14.2.0) now
+    // treats the implicit pointer-to-WORD narrowing inside that expansion as
+    // a hard error in C++ instead of a warning. -fpermissive downgrades it
+    // back to a warning without touching this stock upstream AntTweakBar
+    // source. The sibling AntTweakBarGLFW3 project's own (now-removed)
+    // Windows Makefile needed the same flag for the identical reason.
+    nob_cmd_append(cmd, "-fpermissive");
 #elif defined(__APPLE__)
     // Objective-C++ mode itself is requested via "-x objective-c++" below,
     // where it's added (not here) since it applies to a subset of callers.
