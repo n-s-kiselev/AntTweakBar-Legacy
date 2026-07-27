@@ -333,6 +333,12 @@ static void append_platform_defines(Nob_Cmd *cmd)
     // source. The sibling AntTweakBarGLFW3 project's own (now-removed)
     // Windows Makefile needed the same flag for the identical reason.
     nob_cmd_append(cmd, "-fpermissive");
+    // This build targets the OpenGL backend only (README.md) and does not
+    // compile/link TwDirect3D9/10/11.cpp - without this, TwMgr.cpp's
+    // TwCreateGraph() unconditionally does "new CTwGraphDirect3D9/10/11"
+    // under plain ANT_WINDOWS, requiring those classes' vtables at link
+    // time even though no example ever requests TW_DIRECT3D9/10/11.
+    nob_cmd_append(cmd, "-DTW_NO_DIRECT3D");
 #elif defined(__APPLE__)
     // Objective-C++ mode itself is requested via "-x objective-c++" below,
     // where it's added (not here) since it applies to a subset of callers.

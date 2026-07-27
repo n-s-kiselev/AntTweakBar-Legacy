@@ -1752,7 +1752,14 @@ static int TwCreateGraph(ETwGraphAPI _GraphAPI)
         g_TwMgr->m_Graph = new CTwGraphOpenGLCore;
         break;
     case TW_DIRECT3D9:
-        #ifdef ANT_WINDOWS
+        // TW_NO_DIRECT3D: this build (see nob.c) targets the OpenGL backend
+        // only (README.md) and doesn't compile/link TwDirect3D9/10/11.cpp -
+        // without this guard, ANT_WINDOWS alone is enough for this
+        // unconditional "new CTwGraphDirect3D9" to require those classes'
+        // vtables at link time even though no example ever requests
+        // TW_DIRECT3D9. TwInit() falls through to the "unknown API" error
+        // below instead, same as any other unsupported ETwGraphAPI value.
+        #if defined(ANT_WINDOWS) && !defined(TW_NO_DIRECT3D)
             if( g_TwMgr->m_Device!=NULL )
                 g_TwMgr->m_Graph = new CTwGraphDirect3D9;
             else
@@ -1760,10 +1767,10 @@ static int TwCreateGraph(ETwGraphAPI _GraphAPI)
                 g_TwMgr->SetLastError(g_ErrBadDevice);
                 return 0;
             }
-        #endif // ANT_WINDOWS
+        #endif // ANT_WINDOWS && !TW_NO_DIRECT3D
         break;
     case TW_DIRECT3D10:
-        #ifdef ANT_WINDOWS
+        #if defined(ANT_WINDOWS) && !defined(TW_NO_DIRECT3D)
             if( g_TwMgr->m_Device!=NULL )
                 g_TwMgr->m_Graph = new CTwGraphDirect3D10;
             else
@@ -1771,10 +1778,10 @@ static int TwCreateGraph(ETwGraphAPI _GraphAPI)
                 g_TwMgr->SetLastError(g_ErrBadDevice);
                 return 0;
             }
-        #endif // ANT_WINDOWS
+        #endif // ANT_WINDOWS && !TW_NO_DIRECT3D
         break;
     case TW_DIRECT3D11:
-        #ifdef ANT_WINDOWS
+        #if defined(ANT_WINDOWS) && !defined(TW_NO_DIRECT3D)
             if( g_TwMgr->m_Device!=NULL )
                 g_TwMgr->m_Graph = new CTwGraphDirect3D11;
             else
@@ -1782,7 +1789,7 @@ static int TwCreateGraph(ETwGraphAPI _GraphAPI)
                 g_TwMgr->SetLastError(g_ErrBadDevice);
                 return 0;
             }
-        #endif // ANT_WINDOWS
+        #endif // ANT_WINDOWS && !TW_NO_DIRECT3D
         break;
     }
 
