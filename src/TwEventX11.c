@@ -199,7 +199,11 @@ TW_API int TW_CDECL_CALL TwEventX11(void *xevent)
     case ConfigureNotify:
         return _XConfigureEvent(xevent);
 
-    default:  
+    case SelectionRequest:
+    case SelectionClear:
+        return TwHandleX11SelectionRequest(xevent);
+
+    default:
         break;
     }
     return 0;

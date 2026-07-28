@@ -343,6 +343,16 @@ TW_API int      TW_CALL TwEventSFML(const void *sfmlEvent, unsigned char sfmlMaj
 // For X11 event loop
 #if defined(_UNIX)
     TW_API int TW_CDECL_CALL TwEventX11(void *xevent);
+
+    // Answers CLIPBOARD/PRIMARY SelectionRequest (and SelectionClear) XEvents
+    // with the text most recently copied from an AntTweakBar edit-in-place
+    // field, so Edit-in-place copy/paste interoperates with the desktop
+    // clipboard. TwEventX11() already forwards these for you; only call this
+    // directly if your application pumps X11 events through some other path
+    // (e.g. a windowing library's own event loop instead of TwEventX11()).
+    // Returns 1 if the event was a selection event and was handled, 0
+    // otherwise. Has no effect on non-X11 platforms.
+    TW_API int TW_CALL TwHandleX11SelectionRequest(void *xevent);
 #endif
 
 // ----------------------------------------------------------------------------

@@ -7675,6 +7675,18 @@ bool CTwBar::EditInPlaceMouseMove(int _X, int _Y, bool _Select)
 }
 
 
+#if defined ANT_UNIX
+// The text most recently copied from an AntTweakBar edit-in-place field on
+// this process, offered to other applications while we own the CLIPBOARD
+// selection. Answered from TwHandleX11SelectionRequest() below, which
+// TwEventX11() (or a host application's own X11 event loop) calls whenever
+// another application's paste request (a SelectionRequest XEvent) arrives -
+// this can happen at any time while we're running, not just while we're
+// inside EditInPlaceSetClipboard(), so it can't just be a local variable
+// there.
+static std::string s_X11ClipboardOwnedText;
+#endif
+
 bool CTwBar::EditInPlaceGetClipboard(std::string *_OutString)
 {
     assert( _OutString!=NULL );
@@ -7686,35 +7698,91 @@ bool CTwBar::EditInPlaceGetClipboard(std::string *_OutString)
         return false;
     if( !OpenClipboard(NULL) )
         return false;
-    HGLOBAL TextHandle = GetClipboardData(CF_TEXT); 
-    if( TextHandle!=NULL ) 
-    { 
+    HGLOBAL TextHandle = GetClipboardData(CF_TEXT);
+    if( TextHandle!=NULL )
+    {
         const char *TextString = static_cast<char *>(GlobalLock(TextHandle));
         if( TextHandle!=NULL )
         {
             *_OutString = TextString;
             GlobalUnlock(TextHandle);
-        } 
+        }
     }
-    CloseClipboard(); 
+    CloseClipboard();
+
+#elif defined ANT_OSX
+
+    NSPasteboard *Pasteboard = [NSPasteboard generalPasteboard];
+    NSString *PasteboardString = [Pasteboard stringForType:NSPasteboardTypeString];
+    if( PasteboardString!=nil )
+        *_OutString = [PasteboardString UTF8String];
 
 #elif defined ANT_UNIX
 
-    if( g_TwMgr->m_CurrentXDisplay!=NULL )
+    if( g_TwMgr->m_CurrentXDisplay!=NULL && g_TwMgr->m_CurrentXWindow!=None )
     {
-        int NbBytes = 0;
-        char *Buffer = XFetchBytes(g_TwMgr->m_CurrentXDisplay, &NbBytes);
-        if( Buffer!=NULL )
+        Display *Dpy = g_TwMgr->m_CurrentXDisplay;
+        Window   Win = g_TwMgr->m_CurrentXWindow;
+        Atom ClipboardAtom = XInternAtom(Dpy, "CLIPBOARD", False);
+        Atom Utf8Atom       = XInternAtom(Dpy, "UTF8_STRING", False);
+        Atom PropAtom       = XInternAtom(Dpy, "ANTTWEAKBAR_SELECTION_DATA", False);
+        bool Got = false;
+
+        if( XGetSelectionOwner(Dpy, ClipboardAtom)!=None )
         {
-            if( NbBytes>0 )
+            // Ask whoever owns CLIPBOARD to convert it to UTF8_STRING and
+            // write the result into PropAtom on our own window, then send
+            // us a SelectionNotify once it's done. This is inherently
+            // asynchronous (the owner is a different, possibly slow or
+            // unresponsive process), so wait for the reply with a bounded
+            // timeout instead of blocking forever - matches the approach
+            // GLFW3's own X11 clipboard-get implementation uses for the
+            // same reason.
+            XConvertSelection(Dpy, ClipboardAtom, Utf8Atom, PropAtom, Win, CurrentTime);
+            XFlush(Dpy);
+
+            double StartTime = g_TwMgr->m_Timer.GetTime();
+            XEvent Event;
+            while( g_TwMgr->m_Timer.GetTime()-StartTime < 0.5 )
             {
-                char *Text = new char[NbBytes+1];
-                memcpy(Text, Buffer, NbBytes);
-                Text[NbBytes] = '\0';
-                *_OutString = Text;
-                delete[] Text;
+                if( XCheckTypedWindowEvent(Dpy, Win, SelectionNotify, &Event) )
+                {
+                    Got = (Event.xselection.property!=None);
+                    break;
+                }
+                usleep(1000);
             }
-            XFree(Buffer);
+
+            if( Got )
+            {
+                Atom ActualType; int ActualFormat;
+                unsigned long NbItems, BytesAfter;
+                unsigned char *Data = NULL;
+                if( XGetWindowProperty(Dpy, Win, PropAtom, 0, 65536, True, AnyPropertyType,
+                                        &ActualType, &ActualFormat, &NbItems, &BytesAfter, &Data)==Success
+                    && Data!=NULL )
+                {
+                    *_OutString = std::string(reinterpret_cast<const char *>(Data), NbItems);
+                    XFree(Data);
+                }
+                else
+                    Got = false;
+            }
+        }
+
+        if( !Got )
+        {
+            // No CLIPBOARD owner responded (or none exists) - fall back to
+            // the legacy X11 cut buffer for interoperability with very old
+            // clients that still use it.
+            int NbBytes = 0;
+            char *Buffer = XFetchBytes(Dpy, &NbBytes);
+            if( Buffer!=NULL )
+            {
+                if( NbBytes>0 )
+                    *_OutString = std::string(Buffer, NbBytes);
+                XFree(Buffer);
+            }
         }
     }
 
@@ -7737,26 +7805,42 @@ bool CTwBar::EditInPlaceSetClipboard(const std::string& _String)
     EmptyClipboard();
     HGLOBAL TextHandle = GlobalAlloc(GMEM_MOVEABLE, _String.length()+1);
     if( TextHandle==NULL )
-    { 
-        CloseClipboard(); 
-        return false; 
+    {
+        CloseClipboard();
+        return false;
     }
     char *TextString = static_cast<char *>(GlobalLock(TextHandle));
     memcpy(TextString, _String.c_str(), _String.length());
     TextString[_String.length()] = '\0';
-    GlobalUnlock(TextHandle); 
+    GlobalUnlock(TextHandle);
     SetClipboardData(CF_TEXT, TextHandle);
     CloseClipboard();
 
+#elif defined ANT_OSX
+
+    NSPasteboard *Pasteboard = [NSPasteboard generalPasteboard];
+    [Pasteboard clearContents];
+    [Pasteboard setString:[NSString stringWithUTF8String:_String.c_str()] forType:NSPasteboardTypeString];
+
 #elif defined ANT_UNIX
 
-    if( g_TwMgr->m_CurrentXDisplay!=NULL )
+    s_X11ClipboardOwnedText = _String; // what to offer if TwHandleX11SelectionRequest() is asked
+
+    if( g_TwMgr->m_CurrentXDisplay!=NULL && g_TwMgr->m_CurrentXWindow!=None )
     {
-        XSetSelectionOwner(g_TwMgr->m_CurrentXDisplay, XA_PRIMARY, None, CurrentTime);
+        Atom ClipboardAtom = XInternAtom(g_TwMgr->m_CurrentXDisplay, "CLIPBOARD", False);
+        // Claim the modern CLIPBOARD selection (what Ctrl+V reads in every
+        // current desktop toolkit) using our real window - the previous
+        // code passed None as the owner here, which releases a selection
+        // instead of claiming one, so it never actually worked.
+        XSetSelectionOwner(g_TwMgr->m_CurrentXDisplay, ClipboardAtom, g_TwMgr->m_CurrentXWindow, CurrentTime);
+        // Also keep the legacy PRIMARY/cut-buffer path for very old clients
+        // that only understand those.
+        XSetSelectionOwner(g_TwMgr->m_CurrentXDisplay, XA_PRIMARY, g_TwMgr->m_CurrentXWindow, CurrentTime);
         char *Text = new char[_String.length()+1];
         memcpy(Text, _String.c_str(), _String.length());
         Text[_String.length()] = '\0';
-        XStoreBytes(g_TwMgr->m_CurrentXDisplay, Text, _String.length());
+        XStoreBytes(g_TwMgr->m_CurrentXDisplay, Text, (int)_String.length());
         delete[] Text;
     }
 
@@ -7764,6 +7848,57 @@ bool CTwBar::EditInPlaceSetClipboard(const std::string& _String)
 
     return true;
 }
+
+
+#if defined ANT_UNIX
+int TW_CALL TwHandleX11SelectionRequest(void *_XEvent)
+{
+    XEvent *Event = static_cast<XEvent *>(_XEvent);
+    if( Event->type==SelectionClear )
+        return 1; // we've lost ownership; we hold no X resources to release
+    if( Event->type!=SelectionRequest )
+        return 0;
+
+    const XSelectionRequestEvent *Req = &Event->xselectionrequest;
+    Display *Dpy = Req->display;
+
+    XSelectionEvent Reply;
+    Reply.type      = SelectionNotify;
+    Reply.display   = Req->display;
+    Reply.requestor = Req->requestor;
+    Reply.selection = Req->selection;
+    Reply.target    = Req->target;
+    Reply.time      = Req->time;
+    Reply.property  = None; // refuse, unless handled below
+
+    // Pre-R4 ICCCM clients may send property==None and expect the reply
+    // written under a property named after the target atom instead.
+    Atom PropertyToUse = (Req->property!=None) ? Req->property : Req->target;
+
+    Atom TargetsAtom = XInternAtom(Dpy, "TARGETS", False);
+    Atom Utf8Atom     = XInternAtom(Dpy, "UTF8_STRING", False);
+
+    if( Req->target==TargetsAtom )
+    {
+        Atom Supported[3] = { TargetsAtom, Utf8Atom, XA_STRING };
+        XChangeProperty(Dpy, Req->requestor, PropertyToUse, XA_ATOM, 32,
+                         PropModeReplace, reinterpret_cast<unsigned char *>(Supported), 3);
+        Reply.property = PropertyToUse;
+    }
+    else if( Req->target==Utf8Atom || Req->target==XA_STRING )
+    {
+        XChangeProperty(Dpy, Req->requestor, PropertyToUse, Req->target, 8,
+                         PropModeReplace,
+                         reinterpret_cast<const unsigned char *>(s_X11ClipboardOwnedText.c_str()),
+                         (int)s_X11ClipboardOwnedText.length());
+        Reply.property = PropertyToUse;
+    }
+
+    XSendEvent(Dpy, Req->requestor, False, NoEventMask, reinterpret_cast<XEvent *>(&Reply));
+    XFlush(Dpy);
+    return 1;
+}
+#endif
 
 
 //  ---------------------------------------------------------------------------

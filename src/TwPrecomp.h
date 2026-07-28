@@ -65,6 +65,7 @@
 #   include <Foundation/Foundation.h>
 #   include <AppKit/NSImage.h>
 #   include <AppKit/NSCursor.h>
+#   include <AppKit/NSPasteboard.h>
 #   undef _WIN32
 #   undef WIN32
 #   undef _WIN64
