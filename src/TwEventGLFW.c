@@ -194,6 +194,17 @@ int TW_CALL TwEventKeyGLFW(int glfwKey, int glfwAction)
 
 int TW_CALL TwEventCharGLFW(int glfwChar, int glfwAction)
 {
+    // Ctrl/Cmd-modified keys are already dispatched above in TwEventKeyGLFW's
+    // raw-key path, which correctly carries the modifier state. Some GLFW2
+    // backends (the X11 one, via translateChar()/XLookupString() asking only
+    // for the keysym) don't suppress character generation for Ctrl-held keys
+    // the way GLFW2's own Windows/Cocoa backends do, so without this guard a
+    // shortcut like Ctrl+V is processed twice: once here with the
+    // (incorrectly still-plain) character, and once via the raw key path -
+    // e.g. pasted text ends up inserted twice.
+    if( (g_KMod & TW_KMOD_CTRL) || (g_KMod & TW_KMOD_META) )
+        return 0;
+
     if( glfwAction==GLFW_PRESS && (glfwChar & 0xff00)==0 )
         return TwKeyPressed(glfwChar, g_KMod);
 
