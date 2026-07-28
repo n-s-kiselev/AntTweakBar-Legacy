@@ -49,66 +49,22 @@ char *g_userText = NULL; // Will be malloc'ed on first use
 // independent and unaffected by this.)
 double g_MouseScaleX = 1.0, g_MouseScaleY = 1.0;
 
+// Forwards to the library's own GLFW2 key/char translation (TwEventGLFW.c),
+// which already tracks GLFW_KEY_LSUPER/RSUPER (Command on macOS) into
+// TW_KMOD_META so Command+C/Command+V work there, not just Control+C/V.
+// This ignores the (GLFW3-style) mods/scancode this shim also reports:
+// TwEventKeyGLFW derives modifier state itself from raw key press/release
+// events, which is all it needs.
 static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-  if (action == GLFW_PRESS || action == GLFW_REPEAT)
-  {
-    int twMod = 0;
-    bool ctrl;
-    if (mods & GLFW_MOD_SHIFT) twMod |= TW_KMOD_SHIFT;
-    if ((ctrl = (mods & GLFW_MOD_CONTROL))) twMod |= TW_KMOD_CTRL;
-    if (mods & GLFW_MOD_ALT) twMod |= TW_KMOD_ALT;
-
-    int twKey = 0;
-    switch (key)
-    {
-    case GLFW_KEY_BACKSPACE: twKey = TW_KEY_BACKSPACE; break;
-    case GLFW_KEY_TAB: twKey = TW_KEY_TAB; break;
-    //case GLFW_KEY_???: twKey = TW_KEY_CLEAR; break;
-    case GLFW_KEY_ENTER: twKey = TW_KEY_RETURN; break;
-    case GLFW_KEY_PAUSE: twKey = TW_KEY_PAUSE; break;
-    case GLFW_KEY_ESCAPE: twKey = TW_KEY_ESCAPE; break;
-    case GLFW_KEY_SPACE: twKey = TW_KEY_SPACE; break;
-    case GLFW_KEY_DELETE: twKey = TW_KEY_DELETE; break;
-    case GLFW_KEY_UP: twKey = TW_KEY_UP; break;
-    case GLFW_KEY_DOWN: twKey = TW_KEY_DOWN; break;
-    case GLFW_KEY_RIGHT: twKey = TW_KEY_RIGHT; break;
-    case GLFW_KEY_LEFT: twKey = TW_KEY_LEFT; break;
-    case GLFW_KEY_INSERT: twKey = TW_KEY_INSERT; break;
-    case GLFW_KEY_HOME: twKey = TW_KEY_HOME; break;
-    case GLFW_KEY_END: twKey = TW_KEY_END; break;
-    case GLFW_KEY_PAGE_UP: twKey = TW_KEY_PAGE_UP; break;
-    case GLFW_KEY_PAGE_DOWN: twKey = TW_KEY_PAGE_DOWN; break;
-    case GLFW_KEY_F1: twKey = TW_KEY_F1; break;
-    case GLFW_KEY_F2: twKey = TW_KEY_F2; break;
-    case GLFW_KEY_F3: twKey = TW_KEY_F3; break;
-    case GLFW_KEY_F4: twKey = TW_KEY_F4; break;
-    case GLFW_KEY_F5: twKey = TW_KEY_F5; break;
-    case GLFW_KEY_F6: twKey = TW_KEY_F6; break;
-    case GLFW_KEY_F7: twKey = TW_KEY_F7; break;
-    case GLFW_KEY_F8: twKey = TW_KEY_F8; break;
-    case GLFW_KEY_F9: twKey = TW_KEY_F9; break;
-    case GLFW_KEY_F10: twKey = TW_KEY_F10; break;
-    case GLFW_KEY_F11: twKey = TW_KEY_F11; break;
-    case GLFW_KEY_F12: twKey = TW_KEY_F12; break;
-    case GLFW_KEY_F13: twKey = TW_KEY_F13; break;
-    case GLFW_KEY_F14: twKey = TW_KEY_F14; break;
-    case GLFW_KEY_F15: twKey = TW_KEY_F15; break;
-    }
-    if (twKey == 0 && ctrl && key < 128)
-    {
-      twKey = key;
-    }
-    if (twKey != 0)
-    {
-      if (TwKeyPressed(twKey, twMod)) return;
-    }
-  }
+  (void)window; (void)scancode; (void)mods;
+  TwEventKeyGLFW(key, action);
 }
 
 static void charCallback(GLFWwindow* window, unsigned int key)
 {
-  if (TwKeyPressed(key, 0)) return;
+  (void)window;
+  TwEventCharGLFW((int)key, GLFW_PRESS);
 }
 
 static void mousebuttonCallback(GLFWwindow* _window, int _button, int _action, int _mods)

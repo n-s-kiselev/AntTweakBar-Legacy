@@ -97,22 +97,22 @@ static void setProjection(int width, int height)
     glMatrixMode(GL_MODELVIEW);
 }
 
+// Forwards to the library's own GLFW2 key/char translation (TwEventGLFW.c),
+// which already tracks GLFW_KEY_LSUPER/RSUPER (Command on macOS) into
+// TW_KMOD_META so Command+C/Command+V work there, not just Control+C/V.
+// This ignores the (GLFW3-style) mods this shim also reports: TwEventKeyGLFW
+// derives modifier state itself from raw key press/release events.
 static void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
-    (void)scancode;
-    if (action != GLFW_PRESS && action != GLFW_REPEAT) return;
-    int twMod = 0;
-    if (mods & GLFW_MOD_SHIFT) twMod |= TW_KMOD_SHIFT;
-    if (mods & GLFW_MOD_CONTROL) twMod |= TW_KMOD_CTRL;
-    if (mods & GLFW_MOD_ALT) twMod |= TW_KMOD_ALT;
-    if (key == GLFW_KEY_ESCAPE) glfwSetWindowShouldClose(window, 1);
-    else if (key >= 0 && key < 128) TwKeyPressed(key, twMod);
+    (void)scancode; (void)mods;
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) { glfwSetWindowShouldClose(window, 1); return; }
+    TwEventKeyGLFW(key, action);
 }
 
 static void charCallback(GLFWwindow *window, unsigned int key)
 {
     (void)window;
-    TwKeyPressed((int)key, 0);
+    TwEventCharGLFW((int)key, GLFW_PRESS);
 }
 
 static void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
