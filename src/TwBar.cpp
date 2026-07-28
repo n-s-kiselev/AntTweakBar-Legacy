@@ -7587,7 +7587,13 @@ bool CTwBar::EditInPlaceKeyPressed(int _Key, int _Modifiers)
             DoPaste = true;
         break;
     default:
+#if defined ANT_OSX
+        // macOS convention is Command+C/Command+V, not Control+C/Control+V;
+        // accept either so both muscle memories work.
+        if( _Modifiers==TW_KMOD_CTRL || _Modifiers==TW_KMOD_META )
+#else
         if( _Modifiers==TW_KMOD_CTRL )
+#endif
         {
             if( _Key=='c' || _Key=='C' )
                 DoCopy = true;

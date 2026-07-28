@@ -59,6 +59,13 @@ int TW_CALL TwEventKeyGLFW(int glfwKey, int glfwAction)
         case GLFW_KEY_RALT:
             g_KMod |= TW_KMOD_ALT;
             break;
+        case GLFW_KEY_LSUPER:
+        case GLFW_KEY_RSUPER:
+            // Command key on macOS (also called "Super"/"Windows" key on
+            // other platforms' keyboards, where GLFW2's backends may or may
+            // not report it depending on the window manager).
+            g_KMod |= TW_KMOD_META;
+            break;
         }
     }
     else
@@ -77,6 +84,10 @@ int TW_CALL TwEventKeyGLFW(int glfwKey, int glfwAction)
         case GLFW_KEY_RALT:
             g_KMod &= ~TW_KMOD_ALT;
             break;
+        case GLFW_KEY_LSUPER:
+        case GLFW_KEY_RSUPER:
+            g_KMod &= ~TW_KMOD_META;
+            break;
         }
     }
 
@@ -86,7 +97,7 @@ int TW_CALL TwEventKeyGLFW(int glfwKey, int glfwAction)
         int mod = g_KMod;
         int testkp = ((mod&TW_KMOD_CTRL) || (mod&TW_KMOD_ALT)) ? 1 : 0;
 
-        if( (mod&TW_KMOD_CTRL) && glfwKey>0 && glfwKey<GLFW_KEY_SPECIAL )   // CTRL cases
+        if( ((mod&TW_KMOD_CTRL) || (mod&TW_KMOD_META)) && glfwKey>0 && glfwKey<GLFW_KEY_SPECIAL )   // CTRL/CMD cases
             handled = TwKeyPressed(glfwKey, mod);
         else if( glfwKey>=GLFW_KEY_SPECIAL )
         {
