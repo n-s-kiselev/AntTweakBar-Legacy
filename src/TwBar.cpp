@@ -5034,7 +5034,7 @@ void CTwBar::Draw(int _DrawPart)
                         // column, matching the width/position of every other
                         // widget type (color swatches, text-edit boxes, ...)
                         // instead of a narrow button squeezed at the right edge.
-                        cbx0 = m_PosX+m_VarX1+2;
+                        cbx0 = m_PosX+m_VarX1+1;
                         cbx1 = m_PosX+m_VarX2-2;
                     }
                     int cby0 = yh+3;
