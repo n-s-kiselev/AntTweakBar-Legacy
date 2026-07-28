@@ -25,9 +25,12 @@ repository:
   cross-platform `nob.c` build;
 - builds the supported examples from vendored GLFW2, FreeGLUT, and GLAD
   sources;
-- fixes the AntTweakBar library's custom cursor creation on modern macOS; and
+- fixes the AntTweakBar library's custom cursor creation on modern macOS;
 - includes cross-platform example and integration fixes, including HiDPI
-  sizing, resizing, and safe FreeGLUT shutdown.
+  sizing, resizing, and safe FreeGLUT shutdown; and
+- resizes button widgets to span the full value column, matching the
+  width/position of other widgets (e.g. color swatches and text fields)
+  instead of the original narrow, right-aligned button.
 
 ## GLFW and OpenGL compatibility
 

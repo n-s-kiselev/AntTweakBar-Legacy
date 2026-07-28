@@ -4034,10 +4034,11 @@ void CTwBar::ListLabels(vector<string>& _Labels, vector<color32>& _Colors, vecto
             else if( !m_HierTags[h].m_Var->IsGroup() && static_cast<const CTwVarAtom *>(m_HierTags[h].m_Var)->m_Type==TW_TYPE_BUTTON )
             {
                 if( static_cast<const CTwVarAtom *>(m_HierTags[h].m_Var)->m_Val.m_Button.m_Callback==NULL )
-                    WidthMax = _GroupWidthMax;
-                else if( m_ButtonAlign == BUTTON_ALIGN_RIGHT )
-                    WidthMax = _GroupWidthMax - 2*IncrBtnWidth(m_Font->m_CharHeight);
+                    WidthMax = _GroupWidthMax; // separator/info line: label may use the full row width
                 else
+                    // Interactive button: label is clipped to the normal atom label
+                    // column, like every other variable type, since the button itself
+                    // now fills the value column instead of squeezing next to the label.
                     WidthMax = _AtomWidthMax;
             }
             //else if( m_HighlightedLine==h && m_DrawRotoBtn )
@@ -5029,8 +5030,12 @@ void CTwBar::Draw(int _DrawPart)
                     }
                     else
                     {
-                        cbx0 = m_PosX+m_VarX2-2*bw+bw/2;
-                        cbx1 = m_PosX+m_VarX2-2-bw/2;
+                        // BUTTON_ALIGN_RIGHT (default): span the whole value
+                        // column, matching the width/position of every other
+                        // widget type (color swatches, text-edit boxes, ...)
+                        // instead of a narrow button squeezed at the right edge.
+                        cbx0 = m_PosX+m_VarX1+2;
+                        cbx1 = m_PosX+m_VarX2-2;
                     }
                     int cby0 = yh+3;
                     int cby1 = yh+m_Font->m_CharHeight-3;

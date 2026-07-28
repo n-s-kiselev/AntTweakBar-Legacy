@@ -14,7 +14,6 @@
 //  ---------------------------------------------------------------------------
 
 #include <glad/glad.h>
-// #include <GL/glu.h>
 #include "TwGLFW2.h"
 #include <AntTweakBar.h>
 #include <stdlib.h>
@@ -343,7 +342,7 @@ int main()
     
   // Create a tweak bar
   bar = TwNewBar("TweakBar");
-  tw_glfw2_set_bar_size(bar, 220, 530);
+  tw_glfw2_set_bar_size(bar, 220, 230);
   TwDefine(" GLOBAL help='This example shows how to integrate AntTweakBar with GLFW and OpenGL.' "); // Message added to the help bar.
   TwDefine(" TweakBar color='100 100 50' alpha=200 ");
   // Add 'speed' to 'bar': it is a modifable (RW) variable of type TW_TYPE_DOUBLE. Its key shortcuts are [s] and [S].

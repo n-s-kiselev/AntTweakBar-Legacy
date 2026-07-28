@@ -125,7 +125,7 @@ void GLFWCALL MousePosCB(int x, int y)
 }
 
 
-// This example program draws a possibly transparent cube
+// This example draws a half transparent cube
 void DrawModel(int wireframe)
 {
     int pass, numPass;
@@ -238,7 +238,7 @@ int main()
     {
         int barSize[2] = {
             (int)(200*g_ScaleX + 0.5),
-            (int)(320*g_ScaleY + 0.5)
+            (int)(200*g_ScaleY + 0.5)
         };
         TwSetParam(bar, NULL, "size", TW_PARAM_INT32, 2, barSize);
     }
